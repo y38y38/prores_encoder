@@ -9,8 +9,8 @@ all:encoder
 
 CFLAGS= -g -I./ -Wall
 
-encoder:encoder.o qscale.o slice_size.o code_size.o dct.o
-	gcc -o encoder ${CFLAGS} encoder.o qscale.o slice_size.o code_size.o dct.o -lm
+encoder:encoder.o qscale.o slice_size.o code_size.o dct.o main.o
+	gcc -o encoder ${CFLAGS} encoder.o qscale.o slice_size.o code_size.o dct.o main.o -lm
 
 encoder.o:encoder.c
 	gcc ${CFLAGS} -c encoder.c -lm
@@ -26,6 +26,9 @@ code_size.o:code_size.c
 
 dct.o:dct.c
 	gcc ${CFLAGS} -c dct.c
+
+main.o:main.c
+	gcc ${CFLAGS} -c main.c
 
 
 clean:
