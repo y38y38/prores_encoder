@@ -132,6 +132,7 @@ void print_pixels(int16_t *slice, int32_t mb_num)
         
 
 }
+#if 0
 uint16_t getYCodeSize(uint8_t mb_x, uint8_t mb_y)
 {
     int32_t i;
@@ -162,6 +163,7 @@ uint16_t getCbCodeSize(uint8_t mb_x, uint8_t mb_y)
     printf("out of talbe %d %d\n", mb_x, mb_y);
     return 0xffff;
 }
+#endif
 
 
 
@@ -648,13 +650,13 @@ uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, ui
 
     uint32_t code_size_of_y_data_offset = getBitSize();
     code_size_of_y_data_offset = code_size_of_y_data_offset >> 3;
-    uint16_t size = getYCodeSize(mb_x,mb_y);
+    uint16_t size = 0;
     uint16_t coded_size_of_y_data = SET_DATA16(size);
     setByte((uint8_t*)&coded_size_of_y_data , 2);
 
     uint32_t code_size_of_cb_data_offset = getBitSize();
     code_size_of_cb_data_offset = code_size_of_cb_data_offset >> 3 ;
-    size = getCbCodeSize(mb_x,mb_y);
+    size = 0;
     uint16_t coded_size_of_cb_data = SET_DATA16(size);
     setByte((uint8_t*)&coded_size_of_cb_data , 2);
 
