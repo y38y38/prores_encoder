@@ -17,7 +17,6 @@
 
 #include "qscale.h"
 #include "slice_table.h"
-#include "code_size.h"
 #include "dct.h"
 #include "bitstream.h"
 #include "encoder.h"
@@ -631,7 +630,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     return ((current_offset - start_offset)/8);
 }
 
-uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y, uint16_t slice_size)
+uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y)
 {
     uint32_t start_offset= getBitSize();
     uint8_t qscale = getQscale(mb_x,mb_y);
@@ -793,18 +792,13 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
         while ((mb_x_max - mb_x) < slice_mb_count)
             slice_mb_count >>=1;
 
-       uint16_t slice_size = getSliceSize(mb_x,mb_y);
-       if (slice_size == 0xffff) {
-           printf("%s %d\n", __FUNCTION__, __LINE__);
-           return;
-       }
        //printf("%d %d\n", mb_x, mb_y);
        uint32_t size;
        uint16_t *y = getY(y_data,mb_x,mb_y,8);
        uint16_t *cb = getC(cb_data,mb_x,mb_y,8);
        uint16_t *cr = getC(cr_data,mb_x,mb_y,8);
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
-       size = encode_slice(y, cb, cr, 0, 0, slice_size);
+       size = encode_slice(y, cb, cr, 0, 0);
        new_slice_table[i] = size;
        //printf("size = %d\n",size);
 
