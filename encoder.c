@@ -19,7 +19,9 @@
 #include "slice_table.h"
 #include "code_size.h"
 #include "dct.h"
+#include "bitstream.h"
 #include "encoder.h"
+
 
 uint8_t luma_matrix_[64] =
 {
@@ -45,7 +47,7 @@ uint8_t chroma_matrix_[64] =
 0x06, 0x07, 0x07, 0x09, 0x0a, 0x0b, 0x0e, 0x11, 
 0x07, 0x07, 0x09, 0x0a, 0x0b, 0x0e, 0x11, 0x15, 
 };
-
+#if 0
 #define  SET_DATA32(x)    ((x & 0x000000ff) << 24 |  \
                         (x & 0x0000ff00) <<  8 | \
                         (x & 0x00ff0000) >>  8 | \
@@ -54,6 +56,7 @@ uint8_t chroma_matrix_[64] =
 
 #define  SET_DATA16(x)  ((x & 0x00ff) <<  8 | \
                          (x & 0xff00) >>  8 )
+#endif
 uint16_t new_slice_table[15*68];
 
 uint8_t getQscale(uint8_t mb_x, uint8_t mb_y)
@@ -169,7 +172,7 @@ uint16_t getCbCodeSize(uint8_t mb_x, uint8_t mb_y)
     printf("out of talbe %d %d\n", mb_x, mb_y);
     return 0xffff;
 }
-
+#if 0
 static uint8_t *tmp_buf = NULL;
 uint32_t tmp_buf_byte_offset = 0;
 uint32_t tmp_buf_bit_offset = 0;
@@ -261,6 +264,7 @@ uint8_t *getBitStream(uint32_t *size)
     }
     return tmp_buf;
 }
+#endif
 
 
 
