@@ -681,6 +681,7 @@ uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, ui
     uint32_t current_offset = getBitSize();
     return ((current_offset - start_offset)/8);
 }
+#if 0
 //uint8_t encode_frame(
 void set_frame_header(void)
 {
@@ -761,6 +762,8 @@ void set_frame_header(void)
 
 
 }
+#endif
+#if 0
 uint32_t picture_size_offset_ = 0;
 void set_picture_header(void)
 {
@@ -792,6 +795,8 @@ void set_picture_header(void)
 
 
 }
+#endif
+
 void setSliceTalbe(uint8_t mb_x, uint8_t mb_y) {
     uint16_t size = getSliceSize(mb_x,mb_y);
     uint16_t slice_size = SET_DATA16(size);
