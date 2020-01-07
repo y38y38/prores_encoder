@@ -9,10 +9,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include <unistd.h>
 #include "encoder.h"
-#if 0
+#if 1
 #define MATRIX_NUM (64)
 uint8_t luma_matrix2_[MATRIX_NUM ];
 uint8_t chroma_matrix2_[MATRIX_NUM];
@@ -24,17 +25,17 @@ uint32_t heigth_;
 int8_t *input_file_;
 int8_t *output_file_;
 
-int32_t Text2Matrix(int8_t *file, uint8_t *matrix)
+int32_t Text2Matrix(char *file, uint8_t *matrix)
 {
     
-    FILE *in = fopen(file, "r");
-    if (in == NULL) {
+    FILE *input = fopen((char*)file, "r");
+    if (input == NULL) {
         printf("%d\n", __LINE__);
         return -1;
     }
-    for (int32_t i; i<8;i++) {
+    for (int32_t i=0; i<8;i++) {
         char temp[1024];
-        char * ret = fgets(temp, 1024, in);
+        char * ret = fgets(temp, 1024, input);
         if (ret != temp) {
             printf("%d\n", __LINE__);
             return -1;
@@ -54,7 +55,7 @@ int32_t Text2Matrix(int8_t *file, uint8_t *matrix)
                     return -1;
                 }
             }
-            char * temp2[1024];
+            char temp2[1024];
             memset(temp2, 0x0, 1024);
             memcpy(temp2, temp, ret - (temp + len));
             len = ret - temp + 1;
@@ -62,27 +63,28 @@ int32_t Text2Matrix(int8_t *file, uint8_t *matrix)
             matrix[(i*8) + j] = val;
         }
     }
+    return 0;
 
 }
-int32_t SetChromaMatrix(int8_t *matrix_file)
+int32_t SetChromaMatrix(char *matrix_file)
 {
     return Text2Matrix(matrix_file, chroma_matrix2_);
 }
 
-int32_t SetLumaMatrix(int8_t *matrix_file)
+int32_t SetLumaMatrix(char *matrix_file)
 {
     return Text2Matrix(matrix_file, luma_matrix2_);
 }
 int32_t GetParam(int argc, char **argv)
 {
-    char *luma_matrix_file;
-    char *chroma_matrix_file;
-    char *qscale_file;
-    char *width;
-    char *height;
-    char *input_file;
-    char *output_file;
-    char *block_num;
+    char *luma_matrix_file = NULL;
+    char *chroma_matrix_file = NULL;
+    char *qscale_file = NULL;
+    char *width = NULL;
+    char *height = NULL;
+    char *input_file = NULL;
+    char *output_file = NULL;
+    char *block_num = NULL;
     int opt;
     while((opt = getopt(argc, argv, "l:c:q:w:h:i:o:")) != -1) {
         switch(opt) {
@@ -124,7 +126,7 @@ int32_t GetParam(int argc, char **argv)
     printf("o %s\n",output_file);
     printf("m %s\n",block_num);
 
-    SetLumaMatrix(luma_matrix_file);
+    return SetLumaMatrix(luma_matrix_file);
 
 }
 #endif
@@ -133,7 +135,7 @@ int32_t GetParam(int argc, char **argv)
  */
 int main(int argc, char **argv)
 {
-#if 0
+#if 1
     int32_t ret = GetParam(argc, argv);
     return 0;
     if (ret < 0) {
@@ -143,9 +145,10 @@ int main(int argc, char **argv)
 #endif
     if (argc != 3) {
         printf("error %d\n", __LINE__);
-        return -1;
+        //return -1;
     }
-    FILE *input = fopen(argv[1], "r");
+    //FILE *input = fopen(argv[1], "r");
+    FILE *input = fopen("./luma_matrix.txt", "r");
     if (input == NULL) {
         printf("err %s\n", argv[1]);
         return -1;
