@@ -521,7 +521,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     uint32_t start_offset= getBitSize();
     //printf("start_offset %d\n", start_offset);
 
-    int16_t *y_slice = getYDataToBlock(y_data,mb_x,mb_y,8);
+    int16_t *y_slice = (int16_t*)getYDataToBlock(y_data,mb_x,mb_y,8);
 
     //printf("before\n");
     //print_pixels(y_slice, 8);
@@ -565,7 +565,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("cb start\n");
     uint32_t start_offset= getBitSize();
 
-    uint16_t *cb_slice = getCbDataToBlock(cb_data,mb_x,mb_y,8);
+    int16_t *cb_slice = (int16_t*)getCbDataToBlock(cb_data,mb_x,mb_y,8);
 
     pre_dct(cb_slice, 16);
 
@@ -575,7 +575,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //g_first = 0;
     //print_slice_cb(cb_slice, 4);
     for (i = 0;i< 2*8;i++) {
-        dct_block((int16_t*)&cb_slice[i* (8*8)]);
+        dct_block(&cb_slice[i* (8*8)]);
     }
     //printf("af\n");
     //print_slice_cb(cb_slice, 4);
@@ -601,7 +601,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
 
-    uint16_t *cr_slice = getCbDataToBlock(cr_data,mb_x,mb_y,8);
+    int16_t *cr_slice = (int16_t*)getCbDataToBlock(cr_data,mb_x,mb_y,8);
 
     pre_dct(cr_slice, 16);
 
@@ -610,7 +610,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //g_first = 0;
     //print_slice_cb(cr_slice, 4);
     for (i = 0;i< 4*8;i++) {
-        dct_block((int16_t*)&cr_slice[i* (8*8)]);
+        dct_block(&cr_slice[i* (8*8)]);
     }
     //print_slice_cb(cr_slice, 4);
     pre_quant(cr_slice, 16);

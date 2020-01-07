@@ -38,7 +38,7 @@ static double dct(int16_t *block, int h, int v)
     value = value / 4;
     return value;
 }
-static void print_block(int16_t *block)
+void print_block(int16_t *block)
 {
 
     int x,y;
