@@ -15,7 +15,6 @@
 #include <stdbool.h>
 
 
-#include "qscale.h"
 #include "slice_table.h"
 #include "dct.h"
 #include "bitstream.h"

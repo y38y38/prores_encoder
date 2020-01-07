@@ -1,9 +1,146 @@
+/**
+ *
+ * Copyright (c) 2020 Yuusuke Miyazaki
+ *
+ * This software is released under the MIT License.
+ * http://opensource.org/licenses/mit-license.php
+ *
+ **/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include "encoder.h"
+#if 0
+#define MATRIX_NUM (64)
+uint8_t luma_matrix2_[MATRIX_NUM ];
+uint8_t chroma_matrix2_[MATRIX_NUM];
+uint32_t qscale_table_size_;
+uint8_t *qscale_table_;
+uint32_t block_num_;
+uint32_t width_;
+uint32_t heigth_;
+int8_t *input_file_;
+int8_t *output_file_;
+
+int32_t Text2Matrix(int8_t *file, uint8_t *matrix)
+{
+    
+    FILE *in = fopen(file, "r");
+    if (in == NULL) {
+        printf("%d\n", __LINE__);
+        return -1;
+    }
+    for (int32_t i; i<8;i++) {
+        char temp[1024];
+        char * ret = fgets(temp, 1024, in);
+        if (ret != temp) {
+            printf("%d\n", __LINE__);
+            return -1;
+        }
+        int len = 0;
+        for (int32_t j = 0;j<8;j++) {
+            ret = strstr(temp + len, ",");
+            if (ret == NULL) {
+                if (j == 7) {
+                    ret = strstr(temp + len, "\r");
+                    if (ret == NULL) {
+                        printf("%d\n", __LINE__);
+                        return -1;
+                    }
+                } else {
+                    printf("%d\n", __LINE__);
+                    return -1;
+                }
+            }
+            char * temp2[1024];
+            memset(temp2, 0x0, 1024);
+            memcpy(temp2, temp, ret - (temp + len));
+            len = ret - temp + 1;
+            int val = atoi(temp2);
+            matrix[(i*8) + j] = val;
+        }
+    }
+
+}
+int32_t SetChromaMatrix(int8_t *matrix_file)
+{
+    return Text2Matrix(matrix_file, chroma_matrix2_);
+}
+
+int32_t SetLumaMatrix(int8_t *matrix_file)
+{
+    return Text2Matrix(matrix_file, luma_matrix2_);
+}
+int32_t GetParam(int argc, char **argv)
+{
+    char *luma_matrix_file;
+    char *chroma_matrix_file;
+    char *qscale_file;
+    char *width;
+    char *height;
+    char *input_file;
+    char *output_file;
+    char *block_num;
+    int opt;
+    while((opt = getopt(argc, argv, "l:c:q:w:h:i:o:")) != -1) {
+        switch(opt) {
+            case 'l':
+                luma_matrix_file = optarg;
+                break;
+            case 'c':
+                chroma_matrix_file = optarg;
+                break;
+            case 'q':
+                qscale_file = optarg;
+                break;
+            case 'w':
+                width = optarg;
+                break;
+            case 'h':
+                height = optarg;
+                break;
+            case 'i':
+                input_file = optarg;
+                break;
+            case 'o':
+                output_file = optarg;
+                break;
+            case 'm':
+                block_num = optarg;
+                break;
+            default:
+                printf("error %d\n", __LINE__);
+                return 1;
+        }
+    }
+    printf("l %s\n",luma_matrix_file);
+    printf("c %s\n",chroma_matrix_file);
+    printf("q %s\n",qscale_file);
+    printf("w %s\n",width);
+    printf("h %s\n",height);
+    printf("i %s\n",input_file);
+    printf("o %s\n",output_file);
+    printf("m %s\n",block_num);
+
+    SetLumaMatrix(luma_matrix_file);
+
+}
+#endif
+/*
+ * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-w width] [-h height] [-m block_num_of_macroblock] -i input_file -o output_file
+ */
 int main(int argc, char **argv)
 {
+#if 0
+    int32_t ret = GetParam(argc, argv);
+    return 0;
+    if (ret < 0) {
+        printf("error %d\n", __LINE__);
+        return -1;
+    }
+#endif
     if (argc != 3) {
         printf("error %d\n", __LINE__);
         return -1;
