@@ -57,11 +57,13 @@ int32_t Text2Matrix(char *file, uint8_t *matrix)
             }
             char temp2[1024];
             memset(temp2, 0x0, 1024);
-            memcpy(temp2, temp, ret - (temp + len));
+            memcpy(temp2, temp + len , ret - (temp + len));
             len = ret - temp + 1;
             int val = atoi(temp2);
             matrix[(i*8) + j] = val;
+            printf("%d ",val);
         }
+            printf("\n");
     }
     return 0;
 
