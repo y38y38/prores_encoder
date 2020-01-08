@@ -125,7 +125,7 @@ int32_t GetParam(int argc, char **argv)
                 output_file = optarg;
                 break;
             case 'm':
-                block_num = optarg;
+                block_num_ = atoi(optarg);
                 break;
             default:
                 printf("error %d\n", __LINE__);
@@ -167,6 +167,9 @@ int32_t GetParam(int argc, char **argv)
     }
     if (height_ == 0) {
         height_ = 16;
+    }
+    if (block_num_  == 0) {
+        block_num_   = 8;
     }
 
     return 0;
