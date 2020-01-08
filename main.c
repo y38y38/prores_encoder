@@ -17,15 +17,15 @@
 #define MATRIX_NUM (64)
 uint8_t luma_matrix2_[MATRIX_NUM ];
 uint8_t chroma_matrix2_[MATRIX_NUM];
-uint32_t qscale_table_size_;
-uint8_t *qscale_table_;
-uint32_t block_num_;
-uint32_t width_;
-uint32_t heigth_;
-int8_t *input_file_;
-int8_t *output_file_;
+uint32_t qscale_table_size_ = 0;
+uint8_t *qscale_table_ = NULL;
+uint32_t block_num_ = 0;
+uint32_t width_ = 0;
+uint32_t height_ = 0;
+int8_t *input_file_ = NULL;
+int8_t *output_file_ = NULL ;
 
-int32_t Text2Matrix(char *file, uint8_t *matrix)
+int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
 {
     
     FILE *input = fopen((char*)file, "r");
@@ -33,7 +33,7 @@ int32_t Text2Matrix(char *file, uint8_t *matrix)
         printf("%d\n", __LINE__);
         return -1;
     }
-    for (int32_t i=0; i<8;i++) {
+    for (int32_t i=0; i<column_num;i++) {
         char temp[1024];
         char * ret = fgets(temp, 1024, input);
         if (ret != temp) {
@@ -41,7 +41,7 @@ int32_t Text2Matrix(char *file, uint8_t *matrix)
             return -1;
         }
         int len = 0;
-        for (int32_t j = 0;j<8;j++) {
+        for (int32_t j = 0;j<row_num;j++) {
             ret = strstr(temp + len, ",");
             if (ret == NULL) {
                 if (j == 7) {
@@ -70,12 +70,24 @@ int32_t Text2Matrix(char *file, uint8_t *matrix)
 }
 int32_t SetChromaMatrix(char *matrix_file)
 {
-    return Text2Matrix(matrix_file, chroma_matrix2_);
+    return Text2Matrix(matrix_file, chroma_matrix2_, 8, 8);
 }
 
 int32_t SetLumaMatrix(char *matrix_file)
 {
-    return Text2Matrix(matrix_file, luma_matrix2_);
+    return Text2Matrix(matrix_file, luma_matrix2_, 8, 8);
+}
+int32_t SetQscaleTable(char *qscale_file)
+{
+
+    qscale_table_size_ = 1*1;
+
+    qscale_table_ = (uint8_t*)malloc(qscale_table_size_  * sizeof(uint8_t));
+    if (qscale_table_ == NULL) {
+        printf("malloc %d\n", __LINE__);
+        return -1;
+    }
+    return Text2Matrix(qscale_file, qscale_table_ , 1, 1);
 }
 int32_t GetParam(int argc, char **argv)
 {
@@ -88,6 +100,7 @@ int32_t GetParam(int argc, char **argv)
     char *output_file = NULL;
     char *block_num = NULL;
     int opt;
+    int32_t ret;
     while((opt = getopt(argc, argv, "l:c:q:w:h:i:o:")) != -1) {
         switch(opt) {
             case 'l':
@@ -100,10 +113,10 @@ int32_t GetParam(int argc, char **argv)
                 qscale_file = optarg;
                 break;
             case 'w':
-                width = optarg;
+                width_ = atoi(optarg);
                 break;
             case 'h':
-                height = optarg;
+                height_ = atoi(optarg);
                 break;
             case 'i':
                 input_file = optarg;
@@ -128,7 +141,35 @@ int32_t GetParam(int argc, char **argv)
     printf("o %s\n",output_file);
     printf("m %s\n",block_num);
 
-    return SetLumaMatrix(luma_matrix_file);
+    if (luma_matrix_file != NULL) {
+        ret =  SetLumaMatrix(luma_matrix_file);
+        if (ret < 0) {
+            printf("err %d\n", __LINE__);
+            return 1;
+        }
+    }
+    if (chroma_matrix_file != NULL) {
+        ret = SetChromaMatrix(chroma_matrix_file);
+        if (ret < 0) {
+            printf("err %d\n", __LINE__);
+            return 1;
+        }
+    }
+    if (qscale_file != NULL)  {
+        ret = SetQscaleTable(qscale_file);
+        if (ret < 0) {
+            printf("err %d\n", __LINE__);
+            return 1;
+        }
+    }
+    if (width_ == 0) {
+        width_ = 128;
+    }
+    if (height_ == 0) {
+        height_ = 16;
+    }
+
+    return 0;
 
 }
 #endif
