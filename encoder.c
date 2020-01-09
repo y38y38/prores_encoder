@@ -132,7 +132,7 @@ void set_frame_header(void)
 
 }
 
-uint8_t *encode_frame(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t *encode_frame_size)
+uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 {
 
 
@@ -149,7 +149,7 @@ uint8_t *encode_frame(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, ui
     uint32_t picture_size_offset = (getBitSize()) /8 ;
     set_picture_header();
 
-    encode_slices(y_data, cb_data, cr_data);
+    encode_slices(param->y_data, param->cb_data, param->cr_data);
     uint32_t picture_end = (getBitSize()) /8 ;
 
     uint32_t tmp  = picture_end - picture_size_offset;
@@ -178,5 +178,31 @@ void encoder_init(void)
             }
         }
     }
+}
+int32_t GetSliceNum(int32_t width, int32_t height, int32_t sliceSize)
+{
+    int32_t mb_x_max = (width + 15)  / 16;
+    int32_t mb_y_max = (height + 15) / 16;
+
+    int32_t slice_num_max;
+
+    int32_t numMbsRemainingInRow = mb_x_max;
+    int32_t number_of_slices_per_mb_row;
+    int j = 0;
+
+    do {
+        while (numMbsRemainingInRow >= sliceSize) {
+            j++;
+            numMbsRemainingInRow  -=sliceSize;
+
+        }
+        sliceSize /= 2;
+    } while(numMbsRemainingInRow  > 0);
+
+    number_of_slices_per_mb_row = j;
+
+    slice_num_max = number_of_slices_per_mb_row * mb_y_max;
+    return slice_num_max;
+
 }
 
