@@ -727,14 +727,26 @@ uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
     return c;
 
 }
+int32_t BlockSize2Log(int32_t block_num)
+{
+    if (block_num == 1) {
+        return 0;
+    } else if (block_num == 2) {
+        return 1;
+    } else if (block_num == 4) {
+        return 2;
+    } else {
+        return 3;
+    }
+}
 void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
 {
     uint32_t mb_x;
     uint32_t mb_y;
     uint32_t mb_x_max;
     uint32_t mb_y_max;
-    mb_x_max = (HORIZONTAL+ 15 )>> 4;
-    mb_y_max = VIRTICAL2/ 16;
+    mb_x_max = (HORIZONTAL+ 15 ) / 16;
+    mb_y_max = VIRTICAL2 / 16;
     uint32_t slice_num_max;
     uint32_t log2_desired_slice_size_in_mb = 3;
 
