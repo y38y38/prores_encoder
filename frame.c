@@ -21,6 +21,180 @@
 #include "encoder.h"
 #include "slice.h"
 
+uint16_t new_slice_table[15*68];
+
+uint16_t getSliceSize(uint8_t mb_x, uint8_t mb_y)
+{
+    int32_t i;
+    for(i=0;;i++) {
+        if (slice_tables[i].x == 0xff) {
+            break;
+        } else if (mb_x == slice_tables[i].x) {
+            if (mb_y == slice_tables[i].y) {
+                return slice_tables[i].slice_size;
+            }
+        } 
+    }
+    printf("out of talbe %d %d\n", mb_x, mb_y);
+    return 0xffff;
+}
+void setSliceTalbe(uint8_t mb_x, uint8_t mb_y) {
+    uint16_t size = getSliceSize(mb_x,mb_y);
+    uint16_t slice_size = SET_DATA16(size);
+    if (slice_size== 0xFFFF ) {
+        printf("%s %d\n", __FUNCTION__, __LINE__);
+        return;
+    }
+    setByte((uint8_t*)&slice_size, 2);
+    
+
+}
+void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
+    uint16_t slice_size = SET_DATA16(size);
+    setByteInOffset(offset, (uint8_t*)&slice_size, 2);
+    
+
+}
+uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
+{
+    uint16_t *y = (uint16_t*)malloc(mb_size * 16 *16 * 2);
+    if (y == NULL ) {
+        printf("%d err\n", __LINE__);
+        return NULL;
+    }
+
+    for(int32_t i = 0;i<16;i++) {
+        memcpy(y + i * (mb_size * 16), data + (mb_x * 16) + (mb_y * 16) * HORIZONTAL + i * HORIZONTAL, mb_size * 16 * 2);
+    }
+    return y;
+
+}
+uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
+{
+    uint16_t *c = (uint16_t*)malloc(mb_size * 16 *8 * 2);
+    if (c == NULL ) {
+        printf("%d err\n", __LINE__);
+        return NULL;
+    }
+
+    for(int32_t i = 0;i<16;i++) {
+        memcpy(c + i * (mb_size * 8), data + (mb_x * 8) + (mb_y * 16) * (mb_size * 8)+ i * (HORIZONTAL/2), mb_size * 8 *2);
+    }
+    return c;
+
+}
+void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
+{
+    uint32_t mb_x;
+    uint32_t mb_y;
+    uint32_t mb_x_max;
+    uint32_t mb_y_max;
+    mb_x_max = (HORIZONTAL+ 15 ) / 16;
+    mb_y_max = VIRTICAL2 / 16;
+    uint32_t slice_num_max;
+    uint32_t log2_desired_slice_size_in_mb = 3;
+
+    int32_t j = 0;
+
+    uint32_t sliceSize = 1 << log2_desired_slice_size_in_mb; 
+    uint32_t numMbsRemainingInRow = mb_x_max;
+    uint32_t number_of_slices_per_mb_row_;
+
+    do {
+        while (numMbsRemainingInRow >= sliceSize) {
+            j++;
+            numMbsRemainingInRow  -=sliceSize;
+
+        }
+        sliceSize /= 2;
+    } while(numMbsRemainingInRow  > 0);
+
+    number_of_slices_per_mb_row_ = j;
+
+    slice_num_max = number_of_slices_per_mb_row_ * mb_y_max;
+
+
+    int32_t slice_mb_count = 1 << log2_desired_slice_size_in_mb;
+    mb_x = 0;
+    mb_y = 0;
+
+    int32_t i;
+    uint32_t slice_size_table_offset = (getBitSize()) /8 ;
+    for (i = 0; i < slice_num_max ; i++) {
+
+        while ((mb_x_max - mb_x) < slice_mb_count)
+            slice_mb_count >>=1;
+        //uint32_t table_offset = getBitSize();
+        //printf("f1  %d\n", table_offset/8);
+        setSliceTalbe(mb_x,mb_y);
+
+        mb_x += slice_mb_count;
+        if (mb_x == mb_x_max ) {
+            slice_mb_count = 1 << log2_desired_slice_size_in_mb ;
+            mb_x = 0;
+            mb_y++;
+        }
+
+
+    }
+    slice_mb_count = 1 << log2_desired_slice_size_in_mb;
+    mb_x = 0;
+    mb_y = 0;
+//extern int32_t g_first;
+    //g_first = 0;
+    for (i = 0; i < slice_num_max ; i++) {
+
+        while ((mb_x_max - mb_x) < slice_mb_count)
+            slice_mb_count >>=1;
+
+       //printf("%d %d\n", mb_x, mb_y);
+       uint32_t size;
+       uint16_t *y = getY(y_data,mb_x,mb_y,8);
+       uint16_t *cb = getC(cb_data,mb_x,mb_y,8);
+       uint16_t *cr = getC(cr_data,mb_x,mb_y,8);
+       //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
+       size = encode_slice(y, cb, cr, 0, 0);
+       new_slice_table[i] = size;
+       //printf("size = %d\n",size);
+
+        mb_x += slice_mb_count;
+        if (mb_x == mb_x_max ) {
+            slice_mb_count = 1 << log2_desired_slice_size_in_mb ;
+            mb_x = 0;
+            mb_y++;
+                
+        }
+        //for debug
+        //break;
+
+
+    }
+
+    slice_mb_count = 1 << log2_desired_slice_size_in_mb;
+    mb_x = 0;
+    mb_y = 0;
+    for (i = 0; i < slice_num_max ; i++) {
+
+        while ((mb_x_max - mb_x) < slice_mb_count)
+            slice_mb_count >>=1;
+
+        setSliceTalbeFlush(new_slice_table[i], slice_size_table_offset + (i * 2));
+        //printf("f table offset %d \n", slice_size_table_offset + (i * 2));
+
+        mb_x += slice_mb_count;
+        if (mb_x == mb_x_max ) {
+            slice_mb_count = 1 << log2_desired_slice_size_in_mb ;
+            mb_x = 0;
+            mb_y++;
+        }
+        //for debug
+        //break;
+
+
+    }
+    
+}
+
 uint32_t picture_size_offset_ = 0;
 void set_picture_header(void)
 {
