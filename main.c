@@ -12,19 +12,25 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+
 #include "encoder.h"
-#if 1
-#define MATRIX_NUM (64)
-uint8_t luma_matrix2_[MATRIX_NUM ];
+
+#define MATRIX_ROW_NUM  (8)
+#define MATRIX_COLUMN_NUM  (8)
+#define MATRIX_NUM (MATRIX_ROW_NUM*MATRIX_COLUMN_NUM)
+uint8_t luma_matrix2_[MATRIX_NUM];
 uint8_t chroma_matrix2_[MATRIX_NUM];
+
 uint32_t qscale_table_size_ = 0;
 uint8_t *qscale_table_ = NULL;
 uint32_t block_num_ = 0;
-uint32_t width_ = 0;
-uint32_t height_ = 0;
+uint32_t horizontal_ = 0;
+uint32_t vertical_ = 0;
 char *input_file_ = NULL;
 char *output_file_ = NULL ;
 
+
+#define CHAR_BUF_SIZE     (1024)
 int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
 {
     
@@ -34,8 +40,8 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
         return -1;
     }
     for (int32_t i=0; i<column_num;i++) {
-        char temp[1024];
-        char * ret = fgets(temp, 1024, input);
+        char temp[CHAR_BUF_SIZE];
+        char * ret = fgets(temp, CHAR_BUF_SIZE, input);
         if (ret != temp) {
             printf("%d\n", __LINE__);
             return -1;
@@ -44,7 +50,9 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
         for (int32_t j = 0;j<row_num;j++) {
             ret = strstr(temp + len, ",");
             if (ret == NULL) {
-                if (j == 7) {
+
+                /* when it is last value, it donot need ",". */
+                if (j == (row_num - 1)) {
                     ret = strstr(temp + len, "\r");
                     if (ret == NULL) {
                         printf("%d\n", __LINE__);
@@ -55,12 +63,12 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
                     return -1;
                 }
             }
-            char temp2[1024];
-            memset(temp2, 0x0, 1024);
+            char temp2[CHAR_BUF_SIZE];
+            memset(temp2, 0x0, CHAR_BUF_SIZE);
             memcpy(temp2, temp + len , ret - (temp + len));
             len = ret - temp + 1;
             int val = atoi(temp2);
-            matrix[(i*8) + j] = val;
+            matrix[(i*row_num) + j] = val;
             printf("%d ",val);
         }
             printf("\n");
@@ -70,12 +78,12 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
 }
 int32_t SetChromaMatrix(char *matrix_file)
 {
-    return Text2Matrix(matrix_file, chroma_matrix2_, 8, 8);
+    return Text2Matrix(matrix_file, chroma_matrix2_, MATRIX_ROW_NUM, MATRIX_COLUMN_NUM);
 }
 
 int32_t SetLumaMatrix(char *matrix_file)
 {
-    return Text2Matrix(matrix_file, luma_matrix2_, 8, 8);
+    return Text2Matrix(matrix_file, luma_matrix2_, MATRIX_ROW_NUM, MATRIX_COLUMN_NUM);
 }
 int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
 {
@@ -87,6 +95,10 @@ int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
     }
     return Text2Matrix(qscale_file, qscale_table_ , 1, table_size);
 }
+
+#define DEFAULT_WIDTH   (128)
+#define DEFAULT_HEIGHT  (16)
+#define DEFAULT_BLOCK_NUM (8)
 int32_t GetParam(int argc, char **argv)
 {
     char *luma_matrix_file = NULL;
@@ -96,7 +108,7 @@ int32_t GetParam(int argc, char **argv)
     char *output_file = NULL;
     int opt;
     int32_t ret;
-    while((opt = getopt(argc, argv, "l:c:q:w:h:i:o:m:")) != -1) {
+    while((opt = getopt(argc, argv, "l:c:q:h:v:i:o:m:")) != -1) {
         switch(opt) {
             case 'l':
                 luma_matrix_file = optarg;
@@ -107,11 +119,11 @@ int32_t GetParam(int argc, char **argv)
             case 'q':
                 qscale_file = optarg;
                 break;
-            case 'w':
-                width_ = atoi(optarg);
-                break;
             case 'h':
-                height_ = atoi(optarg);
+                horizontal_ = atoi(optarg);
+                break;
+            case 'v':
+                vertical_ = atoi(optarg);
                 break;
             case 'i':
                 input_file = optarg;
@@ -153,17 +165,17 @@ int32_t GetParam(int argc, char **argv)
         printf("err %d\n", __LINE__);
         return -1;
     }
-    if (width_ == 0) {
-        width_ = 128;
+    if (horizontal_ == 0) {
+        horizontal_ = 128;
     }
-    if (height_ == 0) {
-        height_ = 16;
+    if (vertical_ == 0) {
+        vertical_ = 16;
     }
     if (block_num_  == 0) {
         block_num_   = 8;
     }
 
-    qscale_table_size_  = GetSliceNum(width_, height_, block_num_);
+    qscale_table_size_  = GetSliceNum(horizontal_, vertical_, block_num_);
     printf("slize num %d\n", qscale_table_size_);
 
     if (qscale_file != NULL)  {
@@ -192,9 +204,8 @@ int32_t GetParam(int argc, char **argv)
     return 0;
 
 }
-#endif
 /*
- * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-w width] [-h height] [-m block_num_of_macroblock] -i input_file -o output_file
+ * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-h horizontal] [-v vertical] [-m block_num_of_macroblock] -i input_file -o output_file
  */
 int main(int argc, char **argv)
 {
@@ -215,7 +226,7 @@ int main(int argc, char **argv)
         return -1;
     }
     //decode_init();
-    uint32_t size = width_*height_ * 2;
+    uint32_t size = horizontal_*vertical_ * 2;
     uint16_t *y_data = (uint16_t*)malloc(size);
     if (y_data == NULL) {
         printf("%d\n", __LINE__);
@@ -237,8 +248,8 @@ int main(int argc, char **argv)
     param.qscale_table_size = qscale_table_size_;
     param.qscale_table = qscale_table_;
     param.block_num = block_num_;
-    param.width  = width_;
-    param.heigth = height_;
+    param.horizontal  = horizontal_;
+    param.vertical = vertical_;
     param.y_data = y_data;
     param.cb_data = cb_data;
     param.cr_data = cr_data;

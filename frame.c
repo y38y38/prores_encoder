@@ -55,7 +55,8 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
     
 
 }
-uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
+/* get data for one slice */
+uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
     uint16_t *y = (uint16_t*)malloc(mb_size * 16 *16 * 2);
     if (y == NULL ) {
@@ -64,12 +65,13 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
     }
 
     for(int32_t i = 0;i<16;i++) {
-        memcpy(y + i * (mb_size * 16), data + (mb_x * 16) + (mb_y * 16) * HORIZONTAL + i * HORIZONTAL, mb_size * 16 * 2);
+        memcpy(y + i * (mb_size * 16), data + (mb_x * 16) + (mb_y * 16) * horizontal+ i * horizontal, mb_size * 16 * 2);
     }
     return y;
 
 }
-uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
+/* get data for one slice */
+uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
     uint16_t *c = (uint16_t*)malloc(mb_size * 16 *8 * 2);
     if (c == NULL ) {
@@ -78,25 +80,24 @@ uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size)
     }
 
     for(int32_t i = 0;i<16;i++) {
-        memcpy(c + i * (mb_size * 8), data + (mb_x * 8) + (mb_y * 16) * (mb_size * 8)+ i * (HORIZONTAL/2), mb_size * 8 *2);
+        memcpy(c + i * (mb_size * 8), data + (mb_x * 8) + (mb_y * 16) * (mb_size * 8)+ i * (horizontal/2), mb_size * 8 *2);
     }
     return c;
 
 }
-void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
+void encode_slices(struct encoder_param * param)
 {
     uint32_t mb_x;
     uint32_t mb_y;
     uint32_t mb_x_max;
     uint32_t mb_y_max;
-    mb_x_max = (HORIZONTAL+ 15 ) / 16;
-    mb_y_max = VIRTICAL2 / 16;
+    mb_x_max = (param->horizontal+ 15 ) / 16;
+    mb_y_max = (param->vertical+ 15) / 16;
     uint32_t slice_num_max;
-    uint32_t log2_desired_slice_size_in_mb = 3;
 
     int32_t j = 0;
 
-    uint32_t sliceSize = 1 << log2_desired_slice_size_in_mb; 
+    uint32_t sliceSize = param->block_num; 
     uint32_t numMbsRemainingInRow = mb_x_max;
     uint32_t number_of_slices_per_mb_row_;
 
@@ -114,7 +115,7 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
     slice_num_max = number_of_slices_per_mb_row_ * mb_y_max;
 
 
-    int32_t slice_mb_count = 1 << log2_desired_slice_size_in_mb;
+    int32_t slice_mb_count = param->block_num;
     mb_x = 0;
     mb_y = 0;
 
@@ -130,14 +131,14 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
-            slice_mb_count = 1 << log2_desired_slice_size_in_mb ;
+            slice_mb_count = param->block_num ;
             mb_x = 0;
             mb_y++;
         }
 
 
     }
-    slice_mb_count = 1 << log2_desired_slice_size_in_mb;
+    slice_mb_count = param->block_num;
     mb_x = 0;
     mb_y = 0;
 //extern int32_t g_first;
@@ -149,9 +150,9 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
 
        //printf("%d %d\n", mb_x, mb_y);
        uint32_t size;
-       uint16_t *y = getY(y_data,mb_x,mb_y,8);
-       uint16_t *cb = getC(cb_data,mb_x,mb_y,8);
-       uint16_t *cr = getC(cr_data,mb_x,mb_y,8);
+       uint16_t *y  = getY(param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+       uint16_t *cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+       uint16_t *cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
        size = encode_slice(y, cb, cr, 0, 0);
        new_slice_table[i] = size;
@@ -159,7 +160,7 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
-            slice_mb_count = 1 << log2_desired_slice_size_in_mb ;
+            slice_mb_count = param->block_num;
             mb_x = 0;
             mb_y++;
                 
@@ -170,7 +171,7 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
 
     }
 
-    slice_mb_count = 1 << log2_desired_slice_size_in_mb;
+    slice_mb_count = param->block_num;
     mb_x = 0;
     mb_y = 0;
     for (i = 0; i < slice_num_max ; i++) {
@@ -183,7 +184,7 @@ void encode_slices(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data)
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
-            slice_mb_count = 1 << log2_desired_slice_size_in_mb ;
+            slice_mb_count = param->block_num;
             mb_x = 0;
             mb_y++;
         }
@@ -226,7 +227,7 @@ void set_picture_header(void)
 
 
 }
-void set_frame_header(void)
+void set_frame_header(struct encoder_param* param)
 {
     uint16_t frame_header_size = SET_DATA16(0x94);//ToDo
     setByte((uint8_t*)&frame_header_size, 0x2);
@@ -241,10 +242,10 @@ void set_frame_header(void)
     uint32_t encoder_identifier = SET_DATA32(0x4c617663);
     setByte((uint8_t*)&encoder_identifier, 0x4);
 
-    uint16_t horizontal_size = SET_DATA16(HORIZONTAL);
+    uint16_t horizontal_size = SET_DATA16(param->horizontal);
     setByte((uint8_t*)&horizontal_size , 0x2);
 
-    uint16_t vertical_size = SET_DATA16(VIRTICAL);
+    uint16_t vertical_size = SET_DATA16(param->vertical);
     setByte((uint8_t*)&vertical_size, 0x2);
 
 
@@ -318,12 +319,12 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 
     setByte((uint8_t*)&frame_identifier,4);
 
-    set_frame_header();
+    set_frame_header(param);
 
     uint32_t picture_size_offset = (getBitSize()) /8 ;
     set_picture_header();
 
-    encode_slices(param->y_data, param->cb_data, param->cr_data);
+    encode_slices(param);
     uint32_t picture_end = (getBitSize()) /8 ;
 
     uint32_t tmp  = picture_end - picture_size_offset;
@@ -353,10 +354,10 @@ void encoder_init(void)
         }
     }
 }
-int32_t GetSliceNum(int32_t width, int32_t height, int32_t sliceSize)
+int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 {
-    int32_t mb_x_max = (width + 15)  / 16;
-    int32_t mb_y_max = (height + 15) / 16;
+    int32_t mb_x_max = (horizontal + 15)  / 16;
+    int32_t mb_y_max = (vertical + 15) / 16;
 
     int32_t slice_num_max;
 
