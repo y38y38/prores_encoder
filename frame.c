@@ -97,7 +97,7 @@ void encode_slices(struct encoder_param * param)
 
     int32_t j = 0;
 
-    uint32_t sliceSize = param->block_num; 
+    uint32_t sliceSize = param->slice_size_in_mb; 
     uint32_t numMbsRemainingInRow = mb_x_max;
     uint32_t number_of_slices_per_mb_row_;
 
@@ -115,7 +115,7 @@ void encode_slices(struct encoder_param * param)
     slice_num_max = number_of_slices_per_mb_row_ * mb_y_max;
 
 
-    int32_t slice_mb_count = param->block_num;
+    int32_t slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
 
@@ -131,14 +131,14 @@ void encode_slices(struct encoder_param * param)
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
-            slice_mb_count = param->block_num ;
+            slice_mb_count = param->slice_size_in_mb;
             mb_x = 0;
             mb_y++;
         }
 
 
     }
-    slice_mb_count = param->block_num;
+    slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
 //extern int32_t g_first;
@@ -160,7 +160,7 @@ void encode_slices(struct encoder_param * param)
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
-            slice_mb_count = param->block_num;
+            slice_mb_count = param->slice_size_in_mb;
             mb_x = 0;
             mb_y++;
                 
@@ -171,7 +171,7 @@ void encode_slices(struct encoder_param * param)
 
     }
 
-    slice_mb_count = param->block_num;
+    slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
     for (i = 0; i < slice_num_max ; i++) {
@@ -184,7 +184,7 @@ void encode_slices(struct encoder_param * param)
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
-            slice_mb_count = param->block_num;
+            slice_mb_count = param->slice_size_in_mb;
             mb_x = 0;
             mb_y++;
         }

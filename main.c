@@ -23,7 +23,7 @@ uint8_t chroma_matrix2_[MATRIX_NUM];
 
 uint32_t qscale_table_size_ = 0;
 uint8_t *qscale_table_ = NULL;
-uint32_t block_num_ = 0;
+uint32_t slice_size_in_mb_ = 0;
 uint32_t horizontal_ = 0;
 uint32_t vertical_ = 0;
 char *input_file_ = NULL;
@@ -132,7 +132,7 @@ int32_t GetParam(int argc, char **argv)
                 output_file = optarg;
                 break;
             case 'm':
-                block_num_ = atoi(optarg);
+                slice_size_in_mb_ = atoi(optarg);
                 break;
             default:
                 printf("error %d\n", __LINE__);
@@ -171,11 +171,11 @@ int32_t GetParam(int argc, char **argv)
     if (vertical_ == 0) {
         vertical_ = 16;
     }
-    if (block_num_  == 0) {
-        block_num_   = 8;
+    if (slice_size_in_mb_  == 0) {
+        slice_size_in_mb_   = 8;
     }
 
-    qscale_table_size_  = GetSliceNum(horizontal_, vertical_, block_num_);
+    qscale_table_size_  = GetSliceNum(horizontal_, vertical_, slice_size_in_mb_);
     printf("slize num %d\n", qscale_table_size_);
 
     if (qscale_file != NULL)  {
@@ -205,7 +205,7 @@ int32_t GetParam(int argc, char **argv)
 
 }
 /*
- * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-h horizontal] [-v vertical] [-m block_num_of_macroblock] -i input_file -o output_file
+ * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-h horizontal] [-v vertical] [-m slice_size_in_mb] -i input_file -o output_file
  */
 int main(int argc, char **argv)
 {
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
     param.chroma_matrix = chroma_matrix2_;
     param.qscale_table_size = qscale_table_size_;
     param.qscale_table = qscale_table_;
-    param.block_num = block_num_;
+    param.slice_size_in_mb = slice_size_in_mb_;
     param.horizontal  = horizontal_;
     param.vertical = vertical_;
     param.y_data = y_data;
