@@ -9,7 +9,7 @@ all:encoder
 
 CFLAGS= -g -I./ -Wall
 
-encoder:frame.o  slice_size.o  dct.o main.o bitstream.o slice.o
+encoder:frame.o   dct.o main.o bitstream.o slice.o
 	gcc -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  slice.o -lm
 
 frame.o:frame.c

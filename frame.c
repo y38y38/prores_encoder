@@ -15,7 +15,6 @@
 #include <stdbool.h>
 
 
-#include "slice_table.h"
 #include "dct.h"
 #include "bitstream.h"
 #include "encoder.h"
@@ -27,17 +26,25 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
     
 
 }
+#define MACRO_BLOCK_Y_HORIZONTAL  (16)
+#define MACRO_BLOCK_Y_VERTICAL    (16)
+
+#define MACRO_BLOCK_422_C_HORIZONTAL  (8)
+#define MACRO_BLOCK_422_C_VERTICAL    (16)
+
 /* get data for one slice */
 uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
-    uint16_t *y = (uint16_t*)malloc(mb_size * 16 *16 * 2);
+    uint16_t *y = (uint16_t*)malloc(mb_size * MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t));
     if (y == NULL ) {
         printf("%d err\n", __LINE__);
         return NULL;
     }
 
-    for(int32_t i = 0;i<16;i++) {
-        memcpy(y + i * (mb_size * 16), data + (mb_x * 16) + (mb_y * 16) * horizontal+ i * horizontal, mb_size * 16 * 2);
+    for(int32_t i = 0;i<MACRO_BLOCK_Y_VERTICAL;i++) {
+        memcpy(y + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
+               data + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal), 
+               mb_size * MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t));
     }
     return y;
 

@@ -15,7 +15,6 @@
 #include <stdbool.h>
 
 
-#include "slice_table.h"
 #include "dct.h"
 #include "bitstream.h"
 #include "encoder.h"
