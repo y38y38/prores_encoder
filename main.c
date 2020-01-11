@@ -80,10 +80,20 @@ int32_t SetChromaMatrix(char *matrix_file)
 {
     return Text2Matrix(matrix_file, chroma_matrix2_, MATRIX_ROW_NUM, MATRIX_COLUMN_NUM);
 }
+int32_t SetDefaultChromaMatrix(void)
+{
+    memset(chroma_matrix2_, 0x4, MATRIX_NUM);
+    return 0;
+}
 
 int32_t SetLumaMatrix(char *matrix_file)
 {
     return Text2Matrix(matrix_file, luma_matrix2_, MATRIX_ROW_NUM, MATRIX_COLUMN_NUM);
+}
+int32_t SetDefaultLumaMatrix(void)
+{
+    memset(luma_matrix2_, 0x4, MATRIX_NUM);
+    return 0x0;
 }
 int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
 {
@@ -96,9 +106,9 @@ int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
     return Text2Matrix(qscale_file, qscale_table_ , 1, table_size);
 }
 
-#define DEFAULT_WIDTH   (128)
-#define DEFAULT_HEIGHT  (16)
-#define DEFAULT_BLOCK_NUM (8)
+#define DEFAULT_HORIZONTAL   (128)
+#define DEFAULT_VERTICAL  (16)
+#define DEFAULT_SLICE_SIZE_IN_MB (8)
 int32_t GetParam(int argc, char **argv)
 {
     char *luma_matrix_file = NULL;
@@ -152,8 +162,8 @@ int32_t GetParam(int argc, char **argv)
             return -1;
         }
     } else {
-        printf("err %d\n", __LINE__);
-        return -1;
+        printf("defualt luma matrix %d\n", __LINE__);
+        SetDefaultLumaMatrix();
     }
     if (chroma_matrix_file != NULL) {
         ret = SetChromaMatrix(chroma_matrix_file);
@@ -166,17 +176,16 @@ int32_t GetParam(int argc, char **argv)
         return -1;
     }
     if (horizontal_ == 0) {
-        horizontal_ = 128;
+        horizontal_ = DEFAULT_HORIZONTAL;
     }
     if (vertical_ == 0) {
-        vertical_ = 16;
+        vertical_ = DEFAULT_VERTICAL;
     }
     if (slice_size_in_mb_  == 0) {
-        slice_size_in_mb_   = 8;
+        slice_size_in_mb_   = DEFAULT_SLICE_SIZE_IN_MB;
     }
 
     qscale_table_size_  = GetSliceNum(horizontal_, vertical_, slice_size_in_mb_);
-    printf("slize num %d\n", qscale_table_size_);
 
     if (qscale_file != NULL)  {
         ret = SetQscaleTable(qscale_file,qscale_table_size_);
@@ -214,7 +223,6 @@ int main(int argc, char **argv)
         printf("error %d\n", __LINE__);
         return -1;
     }
-    //FILE *input = fopen(argv[1], "r");
     FILE *input = fopen(input_file_, "r");
     if (input == NULL) {
         printf("err %s\n", input_file_);
@@ -225,18 +233,20 @@ int main(int argc, char **argv)
         printf("err %s\n", output_file_);
         return -1;
     }
-    //decode_init();
-    uint32_t size = horizontal_*vertical_ * 2;
+    uint32_t size = horizontal_ * vertical_ * 2;
     uint16_t *y_data = (uint16_t*)malloc(size);
     if (y_data == NULL) {
         printf("%d\n", __LINE__);
         return 0;
     }
+
+    /* for 422 */
     uint16_t *cb_data = (uint16_t*)malloc(size/2);
     if (cb_data == NULL) {
         printf("%d\n", __LINE__);
         return 0;
     }
+    /* for 422 */
     uint16_t *cr_data = (uint16_t*)malloc(size/2);
     if (cr_data == NULL) {
         printf("%d\n", __LINE__);
@@ -274,14 +284,13 @@ int main(int argc, char **argv)
         uint32_t frame_size;
         uint8_t *frame = encode_frame(&param, &frame_size);
 
-        printf("frame size %d\n", frame_size);
-
         size_t writesize = fwrite(frame, 1, frame_size,  output);
         if (writesize != frame_size) {
             printf("%s %d %d\n", __FUNCTION__, __LINE__, (int)writesize);
             //printf("write %d %p %d %p \n", (int)writesize, raw_data, raw_size,output);
             return -1;
         }
+        /* limit one frame */
         if (i==0) {
           break;
         }

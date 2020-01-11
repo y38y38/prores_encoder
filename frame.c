@@ -21,34 +21,6 @@
 #include "encoder.h"
 #include "slice.h"
 
-uint16_t new_slice_table[15*68];
-
-uint16_t getSliceSize(uint8_t mb_x, uint8_t mb_y)
-{
-    int32_t i;
-    for(i=0;;i++) {
-        if (slice_tables[i].x == 0xff) {
-            break;
-        } else if (mb_x == slice_tables[i].x) {
-            if (mb_y == slice_tables[i].y) {
-                return slice_tables[i].slice_size;
-            }
-        } 
-    }
-    printf("out of talbe %d %d\n", mb_x, mb_y);
-    return 0xffff;
-}
-void setSliceTalbe(uint8_t mb_x, uint8_t mb_y) {
-    uint16_t size = getSliceSize(mb_x,mb_y);
-    uint16_t slice_size = SET_DATA16(size);
-    if (slice_size== 0xFFFF ) {
-        printf("%s %d\n", __FUNCTION__, __LINE__);
-        return;
-    }
-    setByte((uint8_t*)&slice_size, 2);
-    
-
-}
 void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
     uint16_t slice_size = SET_DATA16(size);
     setByteInOffset(offset, (uint8_t*)&slice_size, 2);
@@ -119,15 +91,15 @@ void encode_slices(struct encoder_param * param)
     mb_x = 0;
     mb_y = 0;
 
+    /* write dummy slice size table */
     int32_t i;
     uint32_t slice_size_table_offset = (getBitSize()) /8 ;
     for (i = 0; i < slice_num_max ; i++) {
 
         while ((mb_x_max - mb_x) < slice_mb_count)
             slice_mb_count >>=1;
-        //uint32_t table_offset = getBitSize();
-        //printf("f1  %d\n", table_offset/8);
-        setSliceTalbe(mb_x,mb_y);
+        uint16_t slice_size = 0x0;
+        setByte((uint8_t*)&slice_size, 2);
 
         mb_x += slice_mb_count;
         if (mb_x == mb_x_max ) {
@@ -137,6 +109,11 @@ void encode_slices(struct encoder_param * param)
         }
 
 
+    }
+    uint16_t *slice_size_table = (uint16_t*)malloc(slice_num_max * sizeof(uint16_t));
+    if (slice_size_table  == NULL) {
+        printf("err %d\n", __LINE__);
+        return; 
     }
     slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
@@ -155,7 +132,7 @@ void encode_slices(struct encoder_param * param)
        uint16_t *cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
        size = encode_slice(y, cb, cr, 0, 0);
-       new_slice_table[i] = size;
+       slice_size_table[i] = size;
        //printf("size = %d\n",size);
 
         mb_x += slice_mb_count;
@@ -179,7 +156,7 @@ void encode_slices(struct encoder_param * param)
         while ((mb_x_max - mb_x) < slice_mb_count)
             slice_mb_count >>=1;
 
-        setSliceTalbeFlush(new_slice_table[i], slice_size_table_offset + (i * 2));
+        setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
         //printf("f table offset %d \n", slice_size_table_offset + (i * 2));
 
         mb_x += slice_mb_count;
@@ -193,6 +170,7 @@ void encode_slices(struct encoder_param * param)
 
 
     }
+    free(slice_size_table);
     
 }
 
