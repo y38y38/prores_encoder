@@ -10,6 +10,10 @@
 #define __ENCODER_H__
 #include <stdint.h>
 
+#define MATRIX_ROW_NUM  (8)
+#define MATRIX_COLUMN_NUM  (8)
+#define MATRIX_NUM (MATRIX_ROW_NUM*MATRIX_COLUMN_NUM)
+
 struct encoder_param {
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;

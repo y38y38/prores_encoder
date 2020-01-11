@@ -20,36 +20,10 @@
 #include "encoder.h"
 
 
-uint8_t luma_matrix_[64] =
-{
-0x04, 0x04, 0x05, 0x05, 0x06, 0x07, 0x07, 0x09, 
-0x04, 0x04, 0x05, 0x06, 0x07, 0x07, 0x09, 0x09, 
-0x05, 0x05, 0x06, 0x07, 0x07, 0x09, 0x09, 0x0a, 
-0x05, 0x05, 0x06, 0x07, 0x07, 0x09, 0x09, 0x0a, 
-0x05, 0x06, 0x07, 0x07, 0x08, 0x09, 0x0a, 0x0c, 
-0x06, 0x07, 0x07, 0x08, 0x09, 0x0a, 0x0c, 0x0f, 
-0x06, 0x07, 0x07, 0x09, 0x0a, 0x0b, 0x0e, 0x11, 
-0x07, 0x07, 0x09, 0x0a, 0x0b, 0x0e, 0x11, 0x15, 
-
-};
-
-uint8_t chroma_matrix_[64] =
-{
-0x04, 0x04, 0x05, 0x05, 0x06, 0x07, 0x07, 0x09, 
-0x04, 0x04, 0x05, 0x06, 0x07, 0x07, 0x09, 0x09, 
-0x05, 0x05, 0x06, 0x07, 0x07, 0x09, 0x09, 0x0a, 
-0x05, 0x05, 0x06, 0x07, 0x07, 0x09, 0x09, 0x0a, 
-0x05, 0x06, 0x07, 0x07, 0x08, 0x09, 0x0a, 0x0c, 
-0x06, 0x07, 0x07, 0x08, 0x09, 0x0a, 0x0c, 0x0f, 
-0x06, 0x07, 0x07, 0x09, 0x0a, 0x0b, 0x0e, 0x11, 
-0x07, 0x07, 0x09, 0x0a, 0x0b, 0x0e, 0x11, 0x15, 
-};
-
 uint8_t getQscale(uint8_t mb_x, uint8_t mb_y)
 {
     return 3;
 }
-int32_t g_print  = 0;
 void aprint_block(int16_t *block)
 {
 
@@ -87,9 +61,6 @@ void print_slice_cb(int16_t *slice, int32_t mb_num)
         print_mb_cb(slice + (i*64)*2);
     }
         
-    if (g_print == 1) {
-        //printf("\n");
-    }
 
 }
 void print_slice(int16_t *slice, int32_t mb_num)
@@ -99,9 +70,6 @@ void print_slice(int16_t *slice, int32_t mb_num)
         print_mb(slice + (i*64)*4);
     }
         
-    if (g_print == 1) {
-        //printf("\n");
-    }
 
 }
 void print_pixels(int16_t *slice, int32_t mb_num)
@@ -113,39 +81,6 @@ void print_pixels(int16_t *slice, int32_t mb_num)
         
 
 }
-#if 0
-uint16_t getYCodeSize(uint8_t mb_x, uint8_t mb_y)
-{
-    int32_t i;
-    for(i=0;;i++) {
-        if (code_sizes[i].x == 0xff) {
-            break;
-        } else if (mb_x == code_sizes[i].x) {
-            if (mb_y == code_sizes[i].y) {
-                return code_sizes[i].coded_size_of_y_data;
-            }
-        } 
-    }
-    printf("out of talbe %d %d\n", mb_x, mb_y);
-    return 0xffff;
-}
-uint16_t getCbCodeSize(uint8_t mb_x, uint8_t mb_y)
-{
-    int32_t i;
-    for(i=0;;i++) {
-        if (code_sizes[i].x == 0xff) {
-            break;
-        } else if (mb_x == code_sizes[i].x) {
-            if (mb_y == code_sizes[i].y) {
-                return code_sizes[i].coded_size_of_cb_data;
-            }
-        } 
-    }
-    printf("out of talbe %d %d\n", mb_x, mb_y);
-    return 0xffff;
-}
-#endif
-
 
 
 int32_t abs22(int32_t val)
@@ -497,7 +432,7 @@ void pre_dct(int16_t *y_slice, int32_t  slice_size_in_mb)
 
     }
 }
-uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale)
+uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix)
 {
     //print_slice(y_data, 8);
     //printf("%s start\n", __FUNCTION__);
@@ -525,7 +460,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 
     pre_quant(y_slice, 32);
 
-    encode_qt(y_slice, luma_matrix_, 32);
+    encode_qt(y_slice, matrix, 32);
     //print_slice(y_slice, 8);
     encode_qscale(y_slice, scale , 32);
 
@@ -543,7 +478,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale)
+uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix)
 {
     //printf("cb start\n");
     uint32_t start_offset= getBitSize();
@@ -564,7 +499,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //print_slice_cb(cb_slice, 4);
     pre_quant(cb_slice, 16);
 
-    encode_qt(cb_slice, chroma_matrix_, 16);
+    encode_qt(cb_slice, matrix, 16);
     encode_qscale(cb_slice,scale , 16);
 
     entropy_encode_dc_coefficients(cb_slice, 16);
@@ -579,7 +514,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale)
+uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix)
 {
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
@@ -597,7 +532,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     }
     //print_slice_cb(cr_slice, 4);
     pre_quant(cr_slice, 16);
-    encode_qt(cr_slice, chroma_matrix_, 16);
+    encode_qt(cr_slice, matrix, 16);
     encode_qscale(cr_slice,scale , 16);
 
     entropy_encode_dc_coefficients(cr_slice, 16);
@@ -612,7 +547,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     return ((current_offset - start_offset)/8);
 }
 
-uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y)
+uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y, uint8_t * luma_matrix, uint8_t *chroma_matrix)
 {
     uint32_t start_offset= getBitSize();
     uint8_t qscale = getQscale(mb_x,mb_y);
@@ -645,16 +580,16 @@ uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, ui
 
     //printf("%s start\n", __FUNCTION__);
 
-    size = (uint16_t)encode_slice_y(y_data, mb_x, mb_y, qscale);
+    size = (uint16_t)encode_slice_y(y_data, mb_x, mb_y, qscale, luma_matrix);
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
-    size = (uint16_t)encode_slice_cb(cb_data, mb_x, mb_y, qscale);
+    size = (uint16_t)encode_slice_cb(cb_data, mb_x, mb_y, qscale, chroma_matrix);
     uint16_t cb_size = SET_DATA16(size);
     //printf("cb %d\n", size);
     //exit(1);
 #if 1
-    size = (uint16_t)encode_slice_cr(cr_data, mb_x, mb_y, qscale);
+    size = (uint16_t)encode_slice_cr(cr_data, mb_x, mb_y, qscale, chroma_matrix);
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
 #endif

@@ -50,16 +50,19 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
 
 }
 /* get data for one slice */
+/* for 422 */
 uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
-    uint16_t *c = (uint16_t*)malloc(mb_size * 16 *8 * 2);
+    uint16_t *c = (uint16_t*)malloc(mb_size * MACRO_BLOCK_422_C_HORIZONTAL * MACRO_BLOCK_422_C_VERTICAL * sizeof(uint16_t));
     if (c == NULL ) {
         printf("%d err\n", __LINE__);
         return NULL;
     }
 
-    for(int32_t i = 0;i<16;i++) {
-        memcpy(c + i * (mb_size * 8), data + (mb_x * 8) + (mb_y * 16) * (mb_size * 8)+ i * (horizontal/2), mb_size * 8 *2);
+    for(int32_t i = 0;i<MACRO_BLOCK_422_C_VERTICAL;i++) {
+        memcpy(c + i * (mb_size * MACRO_BLOCK_422_C_HORIZONTAL), 
+               data + (mb_x * MACRO_BLOCK_422_C_HORIZONTAL) + (mb_y * MACRO_BLOCK_422_C_VERTICAL) * (mb_size * MACRO_BLOCK_422_C_HORIZONTAL)+ i * (horizontal/2), 
+               mb_size * MACRO_BLOCK_422_C_HORIZONTAL * sizeof(uint16_t));
     }
     return c;
 
@@ -69,30 +72,11 @@ void encode_slices(struct encoder_param * param)
     uint32_t mb_x;
     uint32_t mb_y;
     uint32_t mb_x_max;
-    uint32_t mb_y_max;
     mb_x_max = (param->horizontal+ 15 ) / 16;
-    mb_y_max = (param->vertical+ 15) / 16;
     uint32_t slice_num_max;
 
-    int32_t j = 0;
 
-    uint32_t sliceSize = param->slice_size_in_mb; 
-    uint32_t numMbsRemainingInRow = mb_x_max;
-    uint32_t number_of_slices_per_mb_row_;
-
-    do {
-        while (numMbsRemainingInRow >= sliceSize) {
-            j++;
-            numMbsRemainingInRow  -=sliceSize;
-
-        }
-        sliceSize /= 2;
-    } while(numMbsRemainingInRow  > 0);
-
-    number_of_slices_per_mb_row_ = j;
-
-    slice_num_max = number_of_slices_per_mb_row_ * mb_y_max;
-
+    slice_num_max = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
 
     int32_t slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
@@ -100,23 +84,12 @@ void encode_slices(struct encoder_param * param)
 
     /* write dummy slice size table */
     int32_t i;
-    uint32_t slice_size_table_offset = (getBitSize()) /8 ;
+    uint32_t slice_size_table_offset = (getBitSize()) / 8 ;
     for (i = 0; i < slice_num_max ; i++) {
-
-        while ((mb_x_max - mb_x) < slice_mb_count)
-            slice_mb_count >>=1;
         uint16_t slice_size = 0x0;
         setByte((uint8_t*)&slice_size, 2);
-
-        mb_x += slice_mb_count;
-        if (mb_x == mb_x_max ) {
-            slice_mb_count = param->slice_size_in_mb;
-            mb_x = 0;
-            mb_y++;
-        }
-
-
     }
+
     uint16_t *slice_size_table = (uint16_t*)malloc(slice_num_max * sizeof(uint16_t));
     if (slice_size_table  == NULL) {
         printf("err %d\n", __LINE__);
@@ -125,8 +98,6 @@ void encode_slices(struct encoder_param * param)
     slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
-//extern int32_t g_first;
-    //g_first = 0;
     for (i = 0; i < slice_num_max ; i++) {
 
         while ((mb_x_max - mb_x) < slice_mb_count)
@@ -138,7 +109,7 @@ void encode_slices(struct encoder_param * param)
        uint16_t *cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        uint16_t *cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
-       size = encode_slice(y, cb, cr, 0, 0);
+       size = encode_slice(y, cb, cr, mb_x, mb_y, param->luma_matrix, param->chroma_matrix);
        slice_size_table[i] = size;
        //printf("size = %d\n",size);
 
@@ -155,34 +126,15 @@ void encode_slices(struct encoder_param * param)
 
     }
 
-    slice_mb_count = param->slice_size_in_mb;
-    mb_x = 0;
-    mb_y = 0;
     for (i = 0; i < slice_num_max ; i++) {
-
-        while ((mb_x_max - mb_x) < slice_mb_count)
-            slice_mb_count >>=1;
-
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
-        //printf("f table offset %d \n", slice_size_table_offset + (i * 2));
-
-        mb_x += slice_mb_count;
-        if (mb_x == mb_x_max ) {
-            slice_mb_count = param->slice_size_in_mb;
-            mb_x = 0;
-            mb_y++;
-        }
-        //for debug
-        //break;
-
-
     }
     free(slice_size_table);
     
 }
 
 uint32_t picture_size_offset_ = 0;
-void set_picture_header(void)
+void set_picture_header(struct encoder_param* param)
 {
 
     uint8_t picture_header_size = 0x8;//ToDo
@@ -193,10 +145,9 @@ void set_picture_header(void)
 
     picture_size_offset_ = (getBitSize()) /8 ;
 
-    uint32_t picture_size = SET_DATA32(191616);//ToDo
+    uint32_t picture_size = SET_DATA32(0);
     setByte((uint8_t*)&picture_size, 4);
 
-    //uint16_t deprecated_number_of_slices =  SET_DATA16(771);//ToDo
     uint16_t deprecated_number_of_slices =  SET_DATA16(1020);//ToDo
     setByte((uint8_t*)&deprecated_number_of_slices , 0x2);
 
@@ -204,7 +155,16 @@ void set_picture_header(void)
     uint8_t reserved2 = 0x0;
     setBit(reserved2 , 2);
 
-    uint8_t log2_desired_slice_size_in_mb = 0x3;
+    uint8_t log2_desired_slice_size_in_mb;
+    if (param->slice_size_in_mb == 1) {
+        log2_desired_slice_size_in_mb = 0;
+    } else if (param->slice_size_in_mb == 2) {
+        log2_desired_slice_size_in_mb = 1;
+    } else if (param->slice_size_in_mb == 4) {
+        log2_desired_slice_size_in_mb = 2;
+    } else {
+        log2_desired_slice_size_in_mb = 3;
+    }
     setBit(log2_desired_slice_size_in_mb, 2);
 
     uint8_t reserved3 = 0x0;
@@ -286,8 +246,8 @@ void set_frame_header(struct encoder_param* param)
     uint8_t load_chroma_quantization_matrix = 0x1;
     setBit(load_chroma_quantization_matrix, 1);
 
-    setByte(luma_matrix_, 64);
-    setByte(chroma_matrix_, 64);
+    setByte(param->luma_matrix, MATRIX_NUM );
+    setByte(param->chroma_matrix, MATRIX_NUM );
 
 
 }
@@ -296,6 +256,7 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 {
 
 
+    uint32_t frame_size_offset = getBitSize() / 8 ;
     uint32_t frame_size = SET_DATA32(0x2ed1c); //ToDo
     setByte((uint8_t*)&frame_size,4);
 
@@ -306,11 +267,11 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 
     set_frame_header(param);
 
-    uint32_t picture_size_offset = (getBitSize()) /8 ;
-    set_picture_header();
+    uint32_t picture_size_offset = (getBitSize()) / 8 ;
+    set_picture_header(param);
 
     encode_slices(param);
-    uint32_t picture_end = (getBitSize()) /8 ;
+    uint32_t picture_end = (getBitSize()) / 8 ;
 
     uint32_t tmp  = picture_end - picture_size_offset;
     //printf("%x\n", tmp);
@@ -324,14 +285,14 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 
     uint8_t *ptr = getBitStream(encode_frame_size);
     uint32_t frame_size_data = SET_DATA32(*encode_frame_size);
-    setByteInOffset(0, (uint8_t*)&frame_size_data , 4);
+    setByteInOffset(frame_size_offset, (uint8_t*)&frame_size_data , 4);
     return ptr;
 }
 void encoder_init(void)
 {
     int32_t i,j;
-    for(i=0;i<64;i++) {
-        for(j=0;j<64;j++) {
+    for(i=0;i<MATRIX_NUM ;i++) {
+        for(j=0;j<MATRIX_NUM ;j++) {
             if (i == block_pattern_scan_table[j]  ) {
                 block_pattern_scan_read_order_table[i] = j;
                 break;
