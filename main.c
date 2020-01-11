@@ -15,9 +15,6 @@
 
 #include "encoder.h"
 
-#define MATRIX_ROW_NUM  (8)
-#define MATRIX_COLUMN_NUM  (8)
-#define MATRIX_NUM (MATRIX_ROW_NUM*MATRIX_COLUMN_NUM)
 uint8_t luma_matrix2_[MATRIX_NUM];
 uint8_t chroma_matrix2_[MATRIX_NUM];
 
