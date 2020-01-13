@@ -430,14 +430,14 @@ void pre_dct(int16_t *y_slice, int32_t  slice_size_in_mb)
 
     }
 }
-uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix)
+uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
 {
     //print_slice(y_data, 8);
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
     //printf("start_offset %d\n", start_offset);
 
-    int16_t *y_slice = (int16_t*)getYDataToBlock(y_data,mb_x,mb_y,8);
+    int16_t *y_slice = (int16_t*)getYDataToBlock(y_data,mb_x,mb_y,slice_size_in_mb);
 
     //printf("before\n");
     //print_pixels(y_slice, 8);
@@ -476,12 +476,12 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix)
+uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
 {
     //printf("cb start\n");
     uint32_t start_offset= getBitSize();
 
-    int16_t *cb_slice = (int16_t*)getCbDataToBlock(cb_data,mb_x,mb_y,8);
+    int16_t *cb_slice = (int16_t*)getCbDataToBlock(cb_data,mb_x,mb_y,slice_size_in_mb);
 
     pre_dct(cb_slice, 16);
 
@@ -512,12 +512,12 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix)
+uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
 {
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
 
-    int16_t *cr_slice = (int16_t*)getCbDataToBlock(cr_data,mb_x,mb_y,8);
+    int16_t *cr_slice = (int16_t*)getCbDataToBlock(cr_data,mb_x,mb_y,slice_size_in_mb);
 
     pre_dct(cr_slice, 16);
 
@@ -548,7 +548,6 @@ uint8_t qScale2quantization_index(uint8_t qscale)
 {
     return qscale;
 }
-//uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y, uint8_t * luma_matrix, uint8_t *chroma_matrix, uint8_t qscale)
 uint32_t encode_slice(struct Slice *param)
 {
     uint32_t start_offset= getBitSize();
@@ -578,19 +577,17 @@ uint32_t encode_slice(struct Slice *param)
 
     //printf("%s start\n", __FUNCTION__);
 
-    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix);
+    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb);
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
-    size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix);
+    size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
     uint16_t cb_size = SET_DATA16(size);
     //printf("cb %d\n", size);
     //exit(1);
-#if 1
-    size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix);
+    size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
-#endif
     setByteInOffset(code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
     //printf("%d %x\n",code_size_of_y_data_offset,code_size_of_y_data_offset); 
     setByteInOffset(code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);

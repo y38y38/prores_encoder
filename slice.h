@@ -10,6 +10,8 @@
 #ifndef __SLICE_H__
 #define __SLICE_H__
 
+#include "encoder.h"
+
 struct Slice {
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;
@@ -28,6 +30,6 @@ extern uint8_t block_pattern_scan_read_order_table[64];
 
 extern uint32_t encode_slice(struct Slice *param);
 
-extern uint8_t luma_matrix_[64];
-extern uint8_t chroma_matrix_[64];
+extern uint8_t luma_matrix_[MATRIX_NUM];
+extern uint8_t chroma_matrix_[MATRIX_NUM];
 #endif
