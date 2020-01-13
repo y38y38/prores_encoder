@@ -125,7 +125,6 @@ void encode_slices(struct encoder_param * param)
 
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
        /* need mb_x = 0 and mb_y = 0 becase getY and getC takas data to mb_x=0 and mb_y=0 position . */
-       //size = encode_slice(y, cb, cr, 0, 0, param->luma_matrix, param->chroma_matrix, param->qscale_table[i]);
        size = encode_slice(&slice_param);
        slice_size_table[i] = size;
        //printf("size = %d\n",size);
