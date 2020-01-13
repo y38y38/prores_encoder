@@ -290,7 +290,7 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
     return 0;
 }
 #define MB_IN_BLOCK                   (4)
-#define BLOCK_IN_MB_422C              (2)
+#define MB_422C_IN_BLCCK              (2)
 #define BLOCK_IN_PIXEL               (64)
 #define MB_HORIZONTAL_Y_IN_PIXEL     (16)
 #define MB_HORIZONTAL_422C_IN_PIXEL   (8)
@@ -367,7 +367,7 @@ uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint3
     int32_t block_position = 0;
     //printf("aa %p\n", pixel_data);
     for (i=0;i<mb_size;i++) {
-        for (block = 0 ; block < BLOCK_IN_MB_422C;block++) { //4:2:2
+        for (block = 0 ; block < MB_422C_IN_BLCCK;block++) { //4:2:2
             for(vertical= 0;vertical<BLOCK_VERTIVAL_IN_PIXEL;vertical++) {
                 if (block == 0) {
                     block_position = 0;
@@ -387,52 +387,52 @@ uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint3
 
 
 }
-void encode_qt(int16_t *y_slice, uint8_t *qmat, int32_t  block_num)
+void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
     for (i = 0; i < block_num; i++) {
-        data = y_slice + (i * BLOCK_IN_PIXEL);
+        data = block + (i * BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = data [j] / ( qmat[j]) ;
         }
 
     }
 }
-void encode_qscale(int16_t *y_slice, uint8_t scale, int32_t  block_num)
+void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
     for (i = 0; i < block_num; i++) {
-        data = y_slice + (i*BLOCK_IN_PIXEL);
+        data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = data [j] / scale;
         }
 
     }
 }
-void pre_quant(int16_t *y_slice, int32_t  block_num)
+void pre_quant(int16_t *block, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
     for (i = 0; i < block_num; i++) {
-        data = y_slice + (i*BLOCK_IN_PIXEL);
+        data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = data [j] * 8;
         }
 
     }
 }
-void pre_dct(int16_t *y_slice, int32_t  block_num)
+void pre_dct(int16_t *block, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
     for (i = 0; i < block_num; i++) {
-        data = y_slice + (i*BLOCK_IN_PIXEL);
+        data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = (data[j] / 2) - 256;
         }
@@ -452,28 +452,28 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     //print_pixels(y_slice, 8);
 
     //printf("pre\n");
-    pre_dct(y_slice, 32);
+    pre_dct(y_slice, slice_size_in_mb * MB_IN_BLOCK);
     //printf("after\n");
     //print_pixels(y_slice, 8);
 
     int32_t i;
     //print_slice(y_slice, 8);
-    for (i = 0;i< 4*8;i++) {
-        dct_block(&y_slice[i* (8*8)]);
+    for (i = 0;i< slice_size_in_mb * MB_IN_BLOCK;i++) {
+        dct_block(&y_slice[i * BLOCK_IN_PIXEL]);
     }
     //print_slice(y_slice, 8);
     //print_slice(y_slice, 8);
     //
 
-    pre_quant(y_slice, 32);
+    pre_quant(y_slice, slice_size_in_mb * MB_IN_BLOCK);
 
-    encode_qt(y_slice, matrix, 32);
+    encode_qt(y_slice, matrix, slice_size_in_mb * MB_IN_BLOCK);
     //print_slice(y_slice, 8);
-    encode_qscale(y_slice, scale , 32);
+    encode_qscale(y_slice, scale , slice_size_in_mb * MB_IN_BLOCK);
 
 
-    entropy_encode_dc_coefficients(y_slice, 32);
-    entropy_encode_ac_coefficients(y_slice, 32);
+    entropy_encode_dc_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK);
+    entropy_encode_ac_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK);
 
     //byte aliened
     uint32_t size  = getBitSize();
@@ -492,25 +492,25 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
 
     int16_t *cb_slice = (int16_t*)getCbDataToBlock(cb_data,mb_x,mb_y,slice_size_in_mb);
 
-    pre_dct(cb_slice, 16);
+    pre_dct(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
     int32_t i;
     //memset(cb_slice, 0x0, 64);
     //extern int g_first;
     //g_first = 0;
     //print_slice_cb(cb_slice, 4);
-    for (i = 0;i< 2*8;i++) {
-        dct_block(&cb_slice[i* (8*8)]);
+    for (i = 0;i< slice_size_in_mb * MB_422C_IN_BLCCK;i++) {
+        dct_block(&cb_slice[i* BLOCK_IN_PIXEL]);
     }
     //printf("af\n");
     //print_slice_cb(cb_slice, 4);
-    pre_quant(cb_slice, 16);
+    pre_quant(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    encode_qt(cb_slice, matrix, 16);
-    encode_qscale(cb_slice,scale , 16);
+    encode_qt(cb_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qscale(cb_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    entropy_encode_dc_coefficients(cb_slice, 16);
-    entropy_encode_ac_coefficients(cb_slice, 16);
+    entropy_encode_dc_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    entropy_encode_ac_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
     //byte aliened
     uint32_t size  = getBitSize();
@@ -528,22 +528,22 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
 
     int16_t *cr_slice = (int16_t*)getCbDataToBlock(cr_data,mb_x,mb_y,slice_size_in_mb);
 
-    pre_dct(cr_slice, 16);
+    pre_dct(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
     int32_t i;
     //extern int32_t g_first;
     //g_first = 0;
     //print_slice_cb(cr_slice, 4);
-    for (i = 0;i< 4*8;i++) {
-        dct_block(&cr_slice[i* (8*8)]);
+    for (i = 0;i< slice_size_in_mb * MB_422C_IN_BLCCK;i++) {
+        dct_block(&cr_slice[i* BLOCK_IN_PIXEL]);
     }
     //print_slice_cb(cr_slice, 4);
-    pre_quant(cr_slice, 16);
-    encode_qt(cr_slice, matrix, 16);
-    encode_qscale(cr_slice,scale , 16);
+    pre_quant(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qt(cr_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qscale(cr_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    entropy_encode_dc_coefficients(cr_slice, 16);
-    entropy_encode_ac_coefficients(cr_slice, 16);
+    entropy_encode_dc_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
     //byte aliened
     uint32_t size  = getBitSize();
     if (size % 8 )  {
