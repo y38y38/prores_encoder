@@ -18,12 +18,9 @@
 #include "dct.h"
 #include "bitstream.h"
 #include "encoder.h"
+#include "slice.h"
 
 
-uint8_t getQscale(uint8_t mb_x, uint8_t mb_y)
-{
-    return 3;
-}
 void aprint_block(int16_t *block)
 {
 
@@ -83,7 +80,7 @@ void print_pixels(int16_t *slice, int32_t mb_num)
 }
 
 
-int32_t abs22(int32_t val)
+int32_t GetAbs(int32_t val)
 {
     if (val < 0) {
         //printf("m\n");
@@ -128,7 +125,6 @@ void exp_golomb_code(int32_t k, uint32_t val)
 }
 void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val)
 {
-    //printf("recc ");
     uint32_t value = (last_rice_q + 1) * pow(2, k_rice);
     if (val < value) {
         golomb_rice_code(k_rice, val);
@@ -196,10 +192,10 @@ int32_t Signedintegertosymbolmapping(int32_t val)
 {
     uint32_t sn;
     if (val >=0 ) {
-        sn = 2 * abs22(val);
+        sn = 2 * GetAbs(val);
 
     } else {
-        sn = 2 * abs22(val) - 1;
+        sn = 2 * GetAbs(val) - 1;
     }
     return sn;
 }
@@ -228,7 +224,7 @@ void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks)
             dc_coeff_difference *= -1;
         }
         val = Signedintegertosymbolmapping(dc_coeff_difference);
-        abs_previousDCDiff = abs22(previousDCDiff );
+        abs_previousDCDiff = GetAbs(previousDCDiff );
         entropy_encode_dc_coefficient(false, abs_previousDCDiff, val);
         previousDCDiff = DcCoeff - previousDCCoeff;
         previousDCCoeff= DcCoeff;
@@ -274,7 +270,7 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
             if (level != 0) {
                 encode_vlc_codeword_ac_run(previousRun, run);
 
-                abs_level_minus_1 = abs22(level) - 1;
+                abs_level_minus_1 = GetAbs(level) - 1;
                 encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1);
                 if (level >=0) {
                     setBit(0,1);
@@ -293,6 +289,11 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
     }
     return 0;
 }
+#define BLOCK_IN_MB              (4)
+#define PIXEL_IN_BLOCK          (64)
+#define HORIZONTAL_Y_IN_MB      (16)
+#define HORIZONTAL_422C_IN_MB    (8)
+#define VERTIVAL_IN_MB          (16)
 
 uint16_t * getYDataToBlock(uint16_t*y_data,uint32_t mb_x, uint32_t mb_y, uint32_t mb_size)
 {
@@ -398,10 +399,7 @@ void encode_qscale(int16_t *y_slice, uint8_t scale, int32_t  slice_size_in_mb)
     for (i = 0; i < slice_size_in_mb; i++) {
         data = y_slice + (i*64);
         for (j=0;j<64;j++) {
-            //if (j==0) {
-                data[j] = data [j] /scale;
-                //data[j] = data [j];
-            //}
+            data[j] = data [j] / scale;
         }
 
     }
@@ -546,15 +544,15 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-
-uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y, uint8_t * luma_matrix, uint8_t *chroma_matrix)
+uint8_t qScale2quantization_index(uint8_t qscale)
+{
+    return qscale;
+}
+//uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, uint32_t  mb_x, uint32_t mb_y, uint8_t * luma_matrix, uint8_t *chroma_matrix, uint8_t qscale)
+uint32_t encode_slice(struct Slice *param)
 {
     uint32_t start_offset= getBitSize();
-    uint8_t qscale = getQscale(mb_x,mb_y);
-    if (qscale == 0xFF ) {
-        printf("%s %d\n", __FUNCTION__, __LINE__);
-        return 0;
-    }
+
     uint8_t slice_header_size = 6;
 
     setBit(slice_header_size , 5);
@@ -562,7 +560,7 @@ uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, ui
     uint8_t reserve =0x0;
     setBit(reserve, 3);
 
-    setByte(&qscale, 1);
+    setByte(&param->qscale, 1);
 
     uint32_t code_size_of_y_data_offset = getBitSize();
     code_size_of_y_data_offset = code_size_of_y_data_offset >> 3;
@@ -580,16 +578,16 @@ uint32_t encode_slice(uint16_t *y_data, uint16_t *cb_data, uint16_t *cr_data, ui
 
     //printf("%s start\n", __FUNCTION__);
 
-    size = (uint16_t)encode_slice_y(y_data, mb_x, mb_y, qscale, luma_matrix);
+    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix);
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
-    size = (uint16_t)encode_slice_cb(cb_data, mb_x, mb_y, qscale, chroma_matrix);
+    size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix);
     uint16_t cb_size = SET_DATA16(size);
     //printf("cb %d\n", size);
     //exit(1);
 #if 1
-    size = (uint16_t)encode_slice_cr(cr_data, mb_x, mb_y, qscale, chroma_matrix);
+    size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix);
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
 #endif
