@@ -387,53 +387,53 @@ uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint3
 
 
 }
-void encode_qt(int16_t *y_slice, uint8_t *qmat, int32_t  slice_size_in_mb)
+void encode_qt(int16_t *y_slice, uint8_t *qmat, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
-    for (i = 0; i < slice_size_in_mb; i++) {
-        data = y_slice + (i*64);
-        for (j=0;j<64;j++) {
-            data[j] = data [j]/ ( qmat[j]) ;
+    for (i = 0; i < block_num; i++) {
+        data = y_slice + (i * BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            data[j] = data [j] / ( qmat[j]) ;
         }
 
     }
 }
-void encode_qscale(int16_t *y_slice, uint8_t scale, int32_t  slice_size_in_mb)
+void encode_qscale(int16_t *y_slice, uint8_t scale, int32_t  block_num)
 {
 
-    int16_t *data = y_slice;
+    int16_t *data;
     int32_t i,j;
-    for (i = 0; i < slice_size_in_mb; i++) {
-        data = y_slice + (i*64);
-        for (j=0;j<64;j++) {
+    for (i = 0; i < block_num; i++) {
+        data = y_slice + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = data [j] / scale;
         }
 
     }
 }
-void pre_quant(int16_t *y_slice, int32_t  slice_size_in_mb)
+void pre_quant(int16_t *y_slice, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
-    for (i = 0; i < slice_size_in_mb; i++) {
-        data = y_slice + (i*64);
-        for (j=0;j<64;j++) {
+    for (i = 0; i < block_num; i++) {
+        data = y_slice + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = data [j] * 8;
         }
 
     }
 }
-void pre_dct(int16_t *y_slice, int32_t  slice_size_in_mb)
+void pre_dct(int16_t *y_slice, int32_t  block_num)
 {
 
     int16_t *data;
     int32_t i,j;
-    for (i = 0; i < slice_size_in_mb; i++) {
-        data = y_slice + (i*64);
-        for (j=0;j<64;j++) {
+    for (i = 0; i < block_num; i++) {
+        data = y_slice + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
             data[j] = (data[j] / 2) - 256;
         }
 
