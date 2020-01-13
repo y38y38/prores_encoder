@@ -8,6 +8,7 @@
  **/
 #ifndef __ENCODER_H__
 #define __ENCODER_H__
+
 #include <stdint.h>
 
 #define MATRIX_ROW_NUM  (8)
