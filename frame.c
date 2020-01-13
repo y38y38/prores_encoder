@@ -108,8 +108,25 @@ void encode_slices(struct encoder_param * param)
        uint16_t *y  = getY(param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        uint16_t *cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        uint16_t *cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+
+
+       struct Slice slice_param;
+       slice_param.luma_matrix = param->luma_matrix;
+       slice_param.chroma_matrix = param->chroma_matrix;
+       slice_param.qscale = param->qscale_table[i];
+       slice_param.slice_size_in_mb= param->slice_size_in_mb;
+       slice_param.horizontal= param->horizontal;
+       slice_param.vertical= param->vertical;
+       slice_param.y_data= y;
+       slice_param.cb_data= cb;
+       slice_param.cr_data= cr;
+       slice_param.mb_x = 0;
+       slice_param.mb_y = 0;
+
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
-       size = encode_slice(y, cb, cr, mb_x, mb_y, param->luma_matrix, param->chroma_matrix);
+       /* need mb_x = 0 and mb_y = 0 becase getY and getC takas data to mb_x=0 and mb_y=0 position . */
+       //size = encode_slice(y, cb, cr, 0, 0, param->luma_matrix, param->chroma_matrix, param->qscale_table[i]);
+       size = encode_slice(&slice_param);
        slice_size_table[i] = size;
        //printf("size = %d\n",size);
 
@@ -118,11 +135,7 @@ void encode_slices(struct encoder_param * param)
             slice_mb_count = param->slice_size_in_mb;
             mb_x = 0;
             mb_y++;
-                
         }
-        //for debug
-        //break;
-
 
     }
 
