@@ -30,5 +30,7 @@ struct encoder_param {
 extern void encoder_init(void);
 extern uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size);
 extern int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize);
+extern uint32_t GetEncodeHorizontal(int32_t horizontal);
+extern uint32_t GetEncodeVertical(int32_t vertical);
 
 #endif

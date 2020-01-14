@@ -338,4 +338,12 @@ int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
     return slice_num_max;
 
 }
+uint32_t GetEncodeHorizontal(int32_t horizontal)
+{
+    return (horizontal + 15)  / 16;
+}
+uint32_t GetEncodeVertical(int32_t vertical)
+{
+    return (vertical + 15)  / 16;
+}
 

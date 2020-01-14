@@ -40,7 +40,7 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
         char temp[CHAR_BUF_SIZE];
         char * ret = fgets(temp, CHAR_BUF_SIZE, input);
         if (ret != temp) {
-            printf("%d\n", __LINE__);
+            printf("err %d\n", __LINE__);
             return -1;
         }
         int len = 0;
@@ -94,6 +94,7 @@ int32_t SetDefaultLumaMatrix(void)
 }
 int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
 {
+    printf("table_size %d\n", table_size);
 
     qscale_table_ = (uint8_t*)malloc(table_size * sizeof(uint8_t));
     if (qscale_table_ == NULL) {
@@ -210,6 +211,18 @@ int32_t GetParam(int argc, char **argv)
     return 0;
 
 }
+int32_t ComplmentVideoFrame(uint16_t *data, int32_t horizontal, int32_t vertical, int32_t encode_horizontal, int32_t encode_vertical)
+{
+    if (encode_horizontal > horizontal) {
+        return -1;
+    }
+    if (encode_vertical > vertical) {
+        for(int32_t i=vertical;i<encode_vertical;i++) {
+            memcpy(&data[i*encode_horizontal],&data[(vertical - 1)*horizontal], encode_horizontal * sizeof(uint16_t));
+        }
+    }
+    return 0;
+}
 /*
  * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-h horizontal] [-v vertical] [-m slice_size_in_mb] -i input_file -o output_file
  */
@@ -230,21 +243,23 @@ int main(int argc, char **argv)
         printf("err %s\n", output_file_);
         return -1;
     }
-    uint32_t size = horizontal_ * vertical_ * 2;
-    uint16_t *y_data = (uint16_t*)malloc(size);
+    int32_t encode_horizontal = GetEncodeHorizontal(horizontal_);
+    int32_t encode_vertical = GetEncodeVertical(vertical_);
+    uint32_t encode_size = encode_horizontal * encode_vertical * 2;
+    uint16_t *y_data = (uint16_t*)malloc(encode_size);
     if (y_data == NULL) {
         printf("%d\n", __LINE__);
         return 0;
     }
 
     /* for 422 */
-    uint16_t *cb_data = (uint16_t*)malloc(size/2);
+    uint16_t *cb_data = (uint16_t*)malloc(encode_size/2);
     if (cb_data == NULL) {
         printf("%d\n", __LINE__);
         return 0;
     }
     /* for 422 */
-    uint16_t *cr_data = (uint16_t*)malloc(size/2);
+    uint16_t *cr_data = (uint16_t*)malloc(encode_size/2);
     if (cr_data == NULL) {
         printf("%d\n", __LINE__);
         return 0;
@@ -262,9 +277,16 @@ int main(int argc, char **argv)
     param.cr_data = cr_data;
 
     encoder_init();
+
+    uint32_t size = horizontal_ * vertical_;
     for (int32_t i=0;;i++) {
         size_t readsize = fread(y_data, 1, size, input);
         if (readsize != size) {
+            printf("%d %d\n", __LINE__, (int32_t)readsize);
+            break;
+        }
+        ret = ComplmentVideoFrame(y_data, horizontal_, vertical_, encode_horizontal,encode_vertical);
+        if (ret < 0) {
             printf("%d %d\n", __LINE__, (int32_t)readsize);
             break;
         }
@@ -273,9 +295,19 @@ int main(int argc, char **argv)
             printf("%d\n", __LINE__);
             break;
         }
+        ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+        if (ret < 0) {
+            printf("%d %d\n", __LINE__, (int32_t)readsize);
+            break;
+        }
         readsize = fread(cr_data, 1, (size /2), input);
         if (readsize != (size / 2)) {
             printf("%d\n", __LINE__);
+            break;
+        }
+        ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+        if (ret < 0) {
+            printf("%d %d\n", __LINE__, (int32_t)readsize);
             break;
         }
         uint32_t frame_size;
