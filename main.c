@@ -66,9 +66,9 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
             len = ret - temp + 1;
             int val = atoi(temp2);
             matrix[(i*row_num) + j] = val;
-            printf("%d ",val);
+            //printf("%d ",val);
         }
-            printf("\n");
+            //printf("\n");
     }
     return 0;
 
