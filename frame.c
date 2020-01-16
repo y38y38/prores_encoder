@@ -40,11 +40,30 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
         printf("%d err\n", __LINE__);
         return NULL;
     }
+#if 0
+    uint16_t *y2 = (uint16_t*)malloc(mb_size * MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t));
+    if (y2 == NULL ) {
+        printf("%d err\n", __LINE__);
+        return NULL;
+    }
+    for(int i=0;i<mb_size * MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL;i++) {
+        *(y2 + i) = 0x3ff;
+    }
+#endif
 
     for(int32_t i = 0;i<MACRO_BLOCK_Y_VERTICAL;i++) {
         memcpy(y + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
                data + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal), 
                mb_size * MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t));
+#if 0
+        if (mb_y > 33) {
+            printf("%p %p\n", data ,(data + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal)));
+
+        memcpy(y + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
+               y2, 
+               mb_size * MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t));
+        }
+#endif
     }
     return y;
 
@@ -103,12 +122,30 @@ void encode_slices(struct encoder_param * param)
         while ((mb_x_max - mb_x) < slice_mb_count)
             slice_mb_count >>=1;
 
-       //printf("%d %d\n", mb_x, mb_y);
+       printf("%d %d\n", mb_x, mb_y);
        uint32_t size;
        uint16_t *y  = getY(param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        uint16_t *cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        uint16_t *cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
 
+#if 0
+#if 1
+       for(int i = 0;i<slice_mb_count*16*16;i++) {
+           //*(y + i) = 0x200;
+       }
+       for(int i = 0;i<slice_mb_count*16*16/2;i++) {
+           *(cb + i) = 0x200;
+       }
+       for(int i = 0;i<slice_mb_count*16*16/2;i++) {
+           *(cr + i) = 0x200;
+       }
+#else
+       memset(y, 0x00, slice_mb_count*16*16*2);
+
+       memset(cb, 0x00, slice_mb_count*16*16*2/2);
+       memset(cr, 0x00, slice_mb_count*16*16*2/2);
+#endif
+#endif
 
        struct Slice slice_param;
        slice_param.luma_matrix = param->luma_matrix;
