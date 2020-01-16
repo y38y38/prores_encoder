@@ -295,7 +295,7 @@ int main(int argc, char **argv)
             printf("%d\n", __LINE__);
             break;
         }
-        ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+        //ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
         if (ret < 0) {
             printf("%d %d\n", __LINE__, (int32_t)readsize);
             break;
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
             printf("%d\n", __LINE__);
             break;
         }
-        ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+        //ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
         if (ret < 0) {
             printf("%d %d\n", __LINE__, (int32_t)readsize);
             break;
