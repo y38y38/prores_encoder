@@ -321,7 +321,7 @@ int main(int argc, char **argv)
         }
         /* limit one frame */
         if (i==0) {
-          break;
+          //break;
         }
         //printf("end frame\n");
         printf(".");
