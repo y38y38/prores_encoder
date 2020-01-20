@@ -20,7 +20,7 @@
 #define  SET_DATA16(x)  ((x & 0x00ff) <<  8 | \
                          (x & 0xff00) >>  8 )
 
-extern uint8_t *initBuf(void);
+extern void initBitStream(void);
 extern void setBit(uint32_t buf, uint32_t size_of_bit);
 extern void setByteInOffset(uint32_t offset, uint8_t *buf, uint32_t size_of_byte);
 

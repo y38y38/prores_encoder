@@ -287,6 +287,7 @@ void set_frame_header(struct encoder_param* param)
 uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 {
 
+    initBitStream();
 
     uint32_t frame_size_offset = getBitSize() / 8 ;
     uint32_t frame_size = SET_DATA32(0x2ed1c); //ToDo

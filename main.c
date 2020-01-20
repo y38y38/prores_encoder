@@ -313,14 +313,16 @@ int main(int argc, char **argv)
         uint32_t frame_size;
         uint8_t *frame = encode_frame(&param, &frame_size);
 
+        printf("frame_size %d\n", frame_size);
         size_t writesize = fwrite(frame, 1, frame_size,  output);
         if (writesize != frame_size) {
             printf("%s %d %d\n", __FUNCTION__, __LINE__, (int)writesize);
             //printf("write %d %p %d %p \n", (int)writesize, raw_data, raw_size,output);
             return -1;
         }
+        free(frame);
         /* limit one frame */
-        if (i==0) {
+        if (i==1) {
           //break;
         }
         //printf("end frame\n");

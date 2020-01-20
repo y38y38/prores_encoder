@@ -19,17 +19,20 @@
 
 
 static uint8_t *tmp_buf = NULL;
-uint32_t tmp_buf_byte_offset = 0;
-uint32_t tmp_buf_bit_offset = 0;
+static uint32_t tmp_buf_byte_offset = 0;
+static uint32_t tmp_buf_bit_offset = 0;
 
-uint8_t *initBuf(void)
+void initBitStream(void)
 {
     uint8_t *buf = (uint8_t*)malloc(1000*1000*1000);
     if (buf ==NULL) {
         printf("%s %d\n", __FUNCTION__, __LINE__);
-        return NULL;
+        return;
     }
-    return buf;
+    tmp_buf_byte_offset = 0;
+    tmp_buf_bit_offset = 0;
+    tmp_buf  = buf;
+    return ;
 
 }
 void setBit(uint32_t buf, uint32_t size_of_bit)
@@ -69,13 +72,6 @@ void setByteInOffset(uint32_t offset, uint8_t *buf, uint32_t size_of_byte)
         printf("error %s %d %d\n", __FUNCTION__, __LINE__,tmp_buf_bit_offset );
         return;
     }
-    if (tmp_buf == NULL) {
-        tmp_buf = initBuf();
-        if (tmp_buf == NULL) {
-            printf("%s %d\n", __FUNCTION__, __LINE__);
-            return;
-        }
-    }
     memcpy(tmp_buf + offset, buf, size_of_byte);
 }
 
@@ -85,13 +81,6 @@ void setByte(uint8_t *buf, uint32_t size_of_byte)
     if (tmp_buf_bit_offset != 0) {
         printf("error %s %d %d\n", __FUNCTION__, __LINE__,tmp_buf_bit_offset);
         return;
-    }
-    if (tmp_buf == NULL) {
-        tmp_buf = initBuf();
-        if (tmp_buf == NULL) {
-            printf("%s %d\n", __FUNCTION__, __LINE__);
-            return;
-        }
     }
     memcpy(tmp_buf + tmp_buf_byte_offset , buf, size_of_byte);
     tmp_buf_byte_offset +=size_of_byte;
