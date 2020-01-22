@@ -180,7 +180,8 @@ void set_picture_header(struct encoder_param* param)
     uint32_t picture_size = SET_DATA32(0);
     setByte((uint8_t*)&picture_size, 4);
 
-    uint16_t deprecated_number_of_slices =  SET_DATA16(1020);//ToDo
+    uint32_t slice_num = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
+    uint16_t deprecated_number_of_slices =  SET_DATA16(slice_num);
     setByte((uint8_t*)&deprecated_number_of_slices , 0x2);
 
 
@@ -283,17 +284,16 @@ void set_frame_header(struct encoder_param* param)
 
 
 }
-
 uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 {
 
     initBitStream();
 
     uint32_t frame_size_offset = getBitSize() / 8 ;
-    uint32_t frame_size = SET_DATA32(0x2ed1c); //ToDo
+    uint32_t frame_size = SET_DATA32(0x0); 
     setByte((uint8_t*)&frame_size,4);
 
-    uint32_t frame_identifier = SET_DATA32(0x69637066);
+    uint32_t frame_identifier = SET_DATA32(0x69637066); //icpf
 
 
     setByte((uint8_t*)&frame_identifier,4);
