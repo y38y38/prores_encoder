@@ -169,7 +169,7 @@ uint32_t picture_size_offset_ = 0;
 void set_picture_header(struct encoder_param* param)
 {
 
-    uint8_t picture_header_size = 0x8;//ToDo
+    uint8_t picture_header_size = 0x8;
     setBit(picture_header_size, 5);
 
     uint8_t reserved = 0x0;
@@ -207,7 +207,7 @@ void set_picture_header(struct encoder_param* param)
 }
 void set_frame_header(struct encoder_param* param)
 {
-    uint16_t frame_header_size = SET_DATA16(0x94);//ToDo
+    uint16_t frame_header_size = SET_DATA16(0x94);
     setByte((uint8_t*)&frame_header_size, 0x2);
 
     uint8_t reserved = 0x0;
