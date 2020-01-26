@@ -259,18 +259,33 @@ int main(int argc, char **argv)
         printf("%d\n", __LINE__);
         return 0;
     }
-
-    /* for 422 */
-    uint16_t *cb_data = (uint16_t*)malloc(encode_size/2);
-    if (cb_data == NULL) {
-        printf("%d\n", __LINE__);
-        return 0;
-    }
-    /* for 422 */
-    uint16_t *cr_data = (uint16_t*)malloc(encode_size/2);
-    if (cr_data == NULL) {
-        printf("%d\n", __LINE__);
-        return 0;
+    uint16_t *cb_data;
+    uint16_t *cr_data;
+    if (format_444_ == true) {
+        /* for 422 */
+        cb_data = (uint16_t*)malloc(encode_size);
+        if (cb_data == NULL) {
+            printf("%d\n", __LINE__);
+            return 0;
+        }
+        /* for 422 */
+        cr_data = (uint16_t*)malloc(encode_size);
+        if (cr_data == NULL) {
+            printf("%d\n", __LINE__);
+            return 0;
+        }
+    } else {
+        cb_data = (uint16_t*)malloc(encode_size/2);
+        if (cb_data == NULL) {
+            printf("%d\n", __LINE__);
+            return 0;
+        }
+        /* for 422 */
+        cr_data = (uint16_t*)malloc(encode_size/2);
+        if (cr_data == NULL) {
+            printf("%d\n", __LINE__);
+            return 0;
+        }
     }
     struct encoder_param param;
     param.luma_matrix = luma_matrix2_;
@@ -309,8 +324,6 @@ int main(int argc, char **argv)
             readsize = fread(cb_data, 1, 4147200, input);
             if (readsize != (size)) {
                 printf("error %d %d %d %x\n", __LINE__, (int)readsize, size, cb_data);
-                readsize = fread(cb_data, 1, 4147200, input);
-                printf("error %d %d %d\n", __LINE__, (int)readsize, size);
                 break;
             }
             ret = ComplmentVideoFrame(cb_data, (horizontal_), vertical_, (encode_horizontal),encode_vertical);
@@ -331,7 +344,7 @@ int main(int argc, char **argv)
         } else {
             readsize = fread(cb_data, 1, (size/2 ), input);
             if (readsize != (size / 2)) {
-                printf("%d %d %d\n", __LINE__,readsize, size);
+                printf("%d %d %d\n", __LINE__,(int)readsize, size);
                 break;
             }
             ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
