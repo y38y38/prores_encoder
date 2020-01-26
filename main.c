@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #include "encoder.h"
@@ -25,6 +26,7 @@ uint32_t horizontal_ = 0;
 uint32_t vertical_ = 0;
 char *input_file_ = NULL;
 char *output_file_ = NULL ;
+bool format_444_ = false;
 
 
 #define CHAR_BUF_SIZE     (1024)
@@ -116,7 +118,7 @@ int32_t GetParam(int argc, char **argv)
     char *output_file = NULL;
     int opt;
     int32_t ret;
-    while((opt = getopt(argc, argv, "l:c:q:h:v:i:o:m:")) != -1) {
+    while((opt = getopt(argc, argv, "l:c:q:h:v:i:o:m:f:")) != -1) {
         switch(opt) {
             case 'l':
                 luma_matrix_file = optarg;
@@ -141,6 +143,12 @@ int32_t GetParam(int argc, char **argv)
                 break;
             case 'm':
                 slice_size_in_mb_ = atoi(optarg);
+                break;
+            case 'f':
+                if (strcmp(optarg, "4444")==0) {
+                    format_444_ = true;
+                } else {
+                }
                 break;
             default:
                 printf("error %d\n", __LINE__);
@@ -275,11 +283,13 @@ int main(int argc, char **argv)
     param.y_data = y_data;
     param.cb_data = cb_data;
     param.cr_data = cr_data;
+    param.format_444 = format_444_;
 
     encoder_init();
 
     uint32_t size = horizontal_ * vertical_ * 2;
     for (int32_t i=0;;i++) {
+        printf("%d\n", size);
         size_t readsize = fread(y_data, 1, size, input);
         if (readsize != size) {
             printf("%d %d\n", __LINE__, (int32_t)readsize);
@@ -290,25 +300,55 @@ int main(int argc, char **argv)
             printf("%d %d\n", __LINE__, (int32_t)readsize);
             break;
         }
-        readsize = fread(cb_data, 1, (size /2), input);
-        if (readsize != (size / 2)) {
-            printf("%d\n", __LINE__);
-            break;
-        }
-        ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
-        if (ret < 0) {
-            printf("%d %d\n", __LINE__, (int32_t)readsize);
-            break;
-        }
-        readsize = fread(cr_data, 1, (size /2), input);
-        if (readsize != (size / 2)) {
-            printf("%d\n", __LINE__);
-            break;
-        }
-        ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
-        if (ret < 0) {
-            printf("%d %d\n", __LINE__, (int32_t)readsize);
-            break;
+        if (format_444_ == true) {
+            //readsize = fread(cb_data, 1, size, input);
+            //readsize = fread(cb_data, 1, size/2, input);
+            //readsize = fread(cb_data, 1, 4147200, input);
+            //readsize = fread(cb_data, 1, 2073600, input);
+            //readsize = fread(cb_data, 1, 2073600, input);
+            readsize = fread(cb_data, 1, 4147200, input);
+            if (readsize != (size)) {
+                printf("error %d %d %d %x\n", __LINE__, (int)readsize, size, cb_data);
+                readsize = fread(cb_data, 1, 4147200, input);
+                printf("error %d %d %d\n", __LINE__, (int)readsize, size);
+                break;
+            }
+            ret = ComplmentVideoFrame(cb_data, (horizontal_), vertical_, (encode_horizontal),encode_vertical);
+            if (ret < 0) {
+                printf("error %d %d\n", __LINE__, (int32_t)readsize);
+                break;
+            }
+            readsize = fread(cr_data, 1, (size ), input);
+            if (readsize != (size)) {
+                printf("error %d\n", __LINE__);
+                break;
+            }
+            ret = ComplmentVideoFrame(cr_data, (horizontal_), vertical_, (encode_horizontal),encode_vertical);
+            if (ret < 0) {
+                printf("error %d %d\n", __LINE__, (int32_t)readsize);
+                break;
+            }
+        } else {
+            readsize = fread(cb_data, 1, (size/2 ), input);
+            if (readsize != (size / 2)) {
+                printf("%d %d %d\n", __LINE__,readsize, size);
+                break;
+            }
+            ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+            if (ret < 0) {
+                printf("%d %d\n", __LINE__, (int32_t)readsize);
+                break;
+            }
+            readsize = fread(cr_data, 1, (size /2), input);
+            if (readsize != (size / 2)) {
+                printf("%d\n", __LINE__);
+                break;
+            }
+            ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+            if (ret < 0) {
+                printf("%d %d\n", __LINE__, (int32_t)readsize);
+                break;
+            }
         }
         uint32_t frame_size;
         uint8_t *frame = encode_frame(&param, &frame_size);

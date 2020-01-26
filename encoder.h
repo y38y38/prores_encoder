@@ -26,6 +26,7 @@ struct encoder_param {
     uint16_t *y_data;
     uint16_t *cb_data;
     uint16_t *cr_data;
+    bool format_444;
 };
 extern void encoder_init(void);
 extern uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size);

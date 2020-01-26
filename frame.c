@@ -106,8 +106,15 @@ void encode_slices(struct encoder_param * param)
        //printf("%d %d\n", mb_x, mb_y);
        uint32_t size;
        uint16_t *y  = getY(param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
-       uint16_t *cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
-       uint16_t *cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+        uint16_t *cb;
+        uint16_t *cr;
+        if (param->format_444 ==  true) {
+            cb = getY(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+            cr = getY(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+       } else {
+            cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+            cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+       }
 
 #if 0
 #if 1
@@ -142,6 +149,7 @@ void encode_slices(struct encoder_param * param)
        slice_param.cr_data= cr;
        slice_param.mb_x = 0;
        slice_param.mb_y = 0;
+       slice_param.format_444 = param->format_444;
 
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
        /* need mb_x = 0 and mb_y = 0 becase getY and getC takas data to mb_x=0 and mb_y=0 position . */
@@ -227,7 +235,12 @@ void set_frame_header(struct encoder_param* param)
     setByte((uint8_t*)&vertical_size, 0x2);
 
 
-    uint8_t chroma_format = 0x2;
+    uint8_t chroma_format;
+    if (param->format_444 == true) {
+        chroma_format = 0x3;
+    } else {
+        chroma_format = 0x2;
+    }
     setBit(chroma_format, 2);
 
     uint8_t reserved1 = 0x0;
