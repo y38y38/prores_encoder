@@ -590,11 +590,22 @@ uint32_t encode_slice(struct Slice *param)
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
-    size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
-    uint16_t cb_size = SET_DATA16(size);
-    //printf("cb %d\n", size);
-    //exit(1);
-    size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+    
+    uint16_t cb_size;
+    if (param->format_444 == true) {
+        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+        cb_size = SET_DATA16(size);
+        //printf("cb %d\n", size);
+        //exit(1);
+        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+    } else {
+        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+        cb_size = SET_DATA16(size);
+        //printf("cb %d\n", size);
+        //exit(1);
+        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+    }
+
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
     setByteInOffset(code_size_of_y_data_offset , (uint8_t *)&y_size, 2);

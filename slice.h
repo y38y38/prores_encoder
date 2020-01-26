@@ -9,7 +9,8 @@
 
 #ifndef __SLICE_H__
 #define __SLICE_H__
-
+#include <stdint.h>
+#include <stdbool.h>
 #include "encoder.h"
 
 struct Slice {
@@ -24,6 +25,7 @@ struct Slice {
     uint16_t *cr_data;
     uint32_t mb_x;
     uint32_t mb_y;
+    bool format_444;
 };
 extern const uint8_t block_pattern_scan_table[64];
 extern uint8_t block_pattern_scan_read_order_table[64];
