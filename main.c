@@ -323,7 +323,7 @@ int main(int argc, char **argv)
             //readsize = fread(cb_data, 1, 2073600, input);
             readsize = fread(cb_data, 1, 4147200, input);
             if (readsize != (size)) {
-                printf("error %d %d %d %x\n", __LINE__, (int)readsize, size, cb_data);
+                printf("error %d %d %d %p\n", __LINE__, (int)readsize, size, cb_data);
                 break;
             }
             ret = ComplmentVideoFrame(cb_data, (horizontal_), vertical_, (encode_horizontal),encode_vertical);
