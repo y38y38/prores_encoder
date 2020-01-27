@@ -262,6 +262,7 @@ int main(int argc, char **argv)
     uint16_t *cb_data;
     uint16_t *cr_data;
     if (format_444_ == true) {
+        printf("444 %d\n", encode_size);
         /* for 422 */
         cb_data = (uint16_t*)malloc(encode_size);
         if (cb_data == NULL) {
@@ -307,7 +308,7 @@ int main(int argc, char **argv)
         printf("%d\n", size);
         size_t readsize = fread(y_data, 1, size, input);
         if (readsize != size) {
-            printf("%d %d\n", __LINE__, (int32_t)readsize);
+            printf(" %d %d %d\n", __LINE__, (int32_t)readsize, size);
             break;
         }
         ret = ComplmentVideoFrame(y_data, horizontal_, vertical_, encode_horizontal,encode_vertical);
@@ -321,7 +322,7 @@ int main(int argc, char **argv)
             //readsize = fread(cb_data, 1, 4147200, input);
             //readsize = fread(cb_data, 1, 2073600, input);
             //readsize = fread(cb_data, 1, 2073600, input);
-            readsize = fread(cb_data, 1, 4147200, input);
+            readsize = fread(cb_data, 1, size, input);
             if (readsize != (size)) {
                 printf("error %d %d %d %p\n", __LINE__, (int)readsize, size, cb_data);
                 break;
