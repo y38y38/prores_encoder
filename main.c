@@ -262,7 +262,7 @@ int main(int argc, char **argv)
     uint16_t *cb_data;
     uint16_t *cr_data;
     if (format_444_ == true) {
-        printf("444 %d\n", encode_size);
+        //printf("444 %d\n", encode_size);
         /* for 422 */
         cb_data = (uint16_t*)malloc(encode_size);
         if (cb_data == NULL) {
