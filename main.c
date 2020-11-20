@@ -96,7 +96,7 @@ int32_t SetDefaultLumaMatrix(void)
 }
 int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
 {
-    printf("table_size %d\n", table_size);
+    //printf("table_size %d\n", table_size);
 
     qscale_table_ = (uint8_t*)malloc(table_size * sizeof(uint8_t));
     if (qscale_table_ == NULL) {
@@ -305,10 +305,12 @@ int main(int argc, char **argv)
 
     uint32_t size = horizontal_ * vertical_ * 2;
     for (int32_t i=0;;i++) {
-        printf("%d\n", size);
+        //printf("%d\n", size);
         size_t readsize = fread(y_data, 1, size, input);
         if (readsize != size) {
-            printf(" %d %d %d\n", __LINE__, (int32_t)readsize, size);
+            if (readsize != 0) {
+                printf(" %d %d %d\n", __LINE__, (int32_t)readsize, size);
+            }
             break;
         }
         ret = ComplmentVideoFrame(y_data, horizontal_, vertical_, encode_horizontal,encode_vertical);
@@ -367,7 +369,7 @@ int main(int argc, char **argv)
         uint32_t frame_size;
         uint8_t *frame = encode_frame(&param, &frame_size);
 
-        printf("frame_size %d\n", frame_size);
+        //printf("frame_size %d\n", frame_size);
         size_t writesize = fwrite(frame, 1, frame_size,  output);
         if (writesize != frame_size) {
             printf("%s %d %d\n", __FUNCTION__, __LINE__, (int)writesize);
@@ -380,7 +382,7 @@ int main(int argc, char **argv)
           //break;
         }
         //printf("end frame\n");
-        printf(".");
+        //printf(".");
     }
     free(y_data);
     free(cb_data);
