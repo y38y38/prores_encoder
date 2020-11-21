@@ -155,11 +155,11 @@ int32_t GetParam(int argc, char **argv)
                 return -1;
         }
     }
-    printf("l %s\n",luma_matrix_file);
-    printf("c %s\n",chroma_matrix_file);
-    printf("q %s\n",qscale_file);
-    printf("i %s\n",input_file);
-    printf("o %s\n",output_file);
+    //printf("l %s\n",luma_matrix_file);
+    //printf("c %s\n",chroma_matrix_file);
+    //printf("q %s\n",qscale_file);
+    //printf("i %s\n",input_file);
+    //printf("o %s\n",output_file);
 
     if (luma_matrix_file != NULL) {
         ret =  SetLumaMatrix(luma_matrix_file);
