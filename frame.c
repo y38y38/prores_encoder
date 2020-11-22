@@ -15,6 +15,7 @@
 #include <stdbool.h>
 
 
+#include "config.h"
 #include "dct.h"
 #include "bitstream.h"
 #include "encoder.h"
@@ -345,6 +346,9 @@ void encoder_init(void)
             }
         }
     }
+#ifdef PRE_CALC_COS
+	dct_init();
+#endif
 }
 int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 {

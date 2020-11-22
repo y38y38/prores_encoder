@@ -8,5 +8,6 @@
  **/
 #ifndef __DCT_H__
 #define __DCT_H__
+extern void dct_init(void);
 extern int dct_block(int16_t *block);
 #endif 
