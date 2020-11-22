@@ -14,6 +14,7 @@
 #include <math.h>
 #include <stdbool.h>
 
+#include "config.h"
 #include "bitstream.h"
 
 
@@ -60,8 +61,13 @@ void setBit(uint32_t buf, uint32_t size_of_bit)
     *(tmp_buf + tmp_buf_byte_offset + 3) =  ((uint8_t)(tmp));
     //printf("bit %x %x\n", tmp_buf_byte_offset, tmp_bit);
 
+#ifdef DEL_DIVISION
+    tmp_buf_byte_offset += (tmp_buf_bit_offset + size_of_bit) >> 3;
+    tmp_buf_bit_offset = (tmp_buf_bit_offset + size_of_bit) & 7;
+#else
     tmp_buf_byte_offset += (tmp_buf_bit_offset + size_of_bit) / 8;
     tmp_buf_bit_offset = (tmp_buf_bit_offset + size_of_bit) % 8;
+#endif
 
 }
 
@@ -92,7 +98,11 @@ uint32_t getBitSize(void)
 uint8_t *getBitStream(uint32_t *size)
 {
     if (tmp_buf_bit_offset != 0) {
+#ifdef DEL_DIVISION
+        *size =  tmp_buf_byte_offset + ((tmp_buf_bit_offset + 7) >> 3);
+#else
         *size =  tmp_buf_byte_offset + ((tmp_buf_bit_offset + 7) / 8);
+#endif
     } else {
         *size =  tmp_buf_byte_offset;
     }
