@@ -31,32 +31,6 @@ void dct_init(void)
     }
     return;
 }
-#if 0
-static double dct(int16_t *block, int h, int v)
-{
-    int x=0,y=0;
-    double value = 0;
-    for(y=0;y<MAX_Y;y++) {
-        for(x=0;x<MAX_X;x++) {
-            double kc = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
-            value += block[(y * 8) + x] *  kc;
-        }
-    }
-    if ( h == 0) {
-        value *= 1/ sqrt(2.0);
-    } else {
-        value *= 1;
-    }
-    if (v == 0) {
-        value *= 1 / sqrt(2.0);
-    } else {
-        value *= 1;
-    }
-
-    value = value / 4;
-    return value;
-}
-#endif
 
 void print_block(int16_t *block)
 {
@@ -104,7 +78,7 @@ int dct_block(int16_t *block) {
         		value *= 1/ sqrt(2.0);
 #endif
     		} else {
-        		value *= 1;
+//        		value *= 1;
     		}
     		if (v == 0) {
 #ifdef DEL_SQRT
@@ -118,7 +92,7 @@ int dct_block(int16_t *block) {
         		value *= 1/ sqrt(2.0);
 #endif
     		} else {
-        		value *= 1;
+//        		value *= 1;
     		}
 			//double can't shift
     		value = value / 4;
