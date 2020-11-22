@@ -397,7 +397,11 @@ int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
             numMbsRemainingInRow  -=sliceSize;
 
         }
+#ifdef DEL_DIVISION
+        sliceSize >>= 1;
+#else
         sliceSize /= 2;
+#endif
     } while(numMbsRemainingInRow  > 0);
 
     number_of_slices_per_mb_row = j;
@@ -409,7 +413,7 @@ int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 uint32_t GetEncodeHorizontal(int32_t horizontal)
 {
 #ifdef DEL_DIVISION
-    return ((horizontal + 15)  >> 4) * 16;
+    return ((horizontal + 15)  >> 4) << 4;
 #else
     return ((horizontal + 15)  / 16) * 16;
 #endif
@@ -418,7 +422,7 @@ uint32_t GetEncodeHorizontal(int32_t horizontal)
 uint32_t GetEncodeVertical(int32_t vertical)
 {
 #ifdef DEL_DIVISION
-    return ((vertical + 15)  >> 4) * 16;
+    return ((vertical + 15)  >> 4) << 4;
 #else
     return ((vertical + 15)  / 16) * 16;
 #endif
