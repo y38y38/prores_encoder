@@ -15,7 +15,7 @@
 
 #define MAX_X   (8)
 #define MAX_Y   (8)
-#if 1
+
 double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
 void dct_init(void)
 {
@@ -31,7 +31,6 @@ void dct_init(void)
     }
     return;
 }
-#endif
 #if 0
 static double dct(int16_t *block, int h, int v)
 {
@@ -93,12 +92,31 @@ int dct_block(int16_t *block) {
         		}
     		}
     		if ( h == 0) {
+#ifdef DEL_SQRT
+#ifdef DEL_DIVISION
+        		value *= 0.70710678118;
+#else
+				//better quality
+        		value *= 1/ 1.41421356237;
+#endif
+
+#else
         		value *= 1/ sqrt(2.0);
+#endif
     		} else {
         		value *= 1;
     		}
     		if (v == 0) {
-        		value *= 1 / sqrt(2.0);
+#ifdef DEL_SQRT
+#ifdef DEL_DIVISION
+        		value *= 0.70710678118;
+#else
+				//better quality
+        		value *= 1 / 1.41421356237;
+#endif
+#else
+        		value *= 1/ sqrt(2.0);
+#endif
     		} else {
         		value *= 1;
     		}
