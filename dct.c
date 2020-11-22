@@ -92,7 +92,7 @@ int dct_block(int16_t *block) {
         		}
     		}
     		if ( h == 0) {
-#ifdef DEL_SQRT
+#ifdef DEL_SQRT //changed quality
 #ifdef DEL_DIVISION
         		value *= 0.70710678118;
 #else
@@ -120,7 +120,7 @@ int dct_block(int16_t *block) {
     		} else {
         		value *= 1;
     		}
-
+			//double can't shift
     		value = value / 4;
 
             result[(v * MAX_X) + h] = value;
