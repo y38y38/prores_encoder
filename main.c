@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "encoder.h"
 
 uint8_t luma_matrix2_[MATRIX_NUM];
@@ -345,22 +346,44 @@ int main(int argc, char **argv)
                 break;
             }
         } else {
+#ifdef DEL_DIVISION
+            readsize = fread(cb_data, 1, (size>>1 ), input);
+            if (readsize != (size>>1)) {
+#else
             readsize = fread(cb_data, 1, (size/2 ), input);
             if (readsize != (size / 2)) {
+#endif
+
                 printf("%d %d %d\n", __LINE__,(int)readsize, size);
                 break;
             }
+#ifdef DEL_DIVISION
+            ret = ComplmentVideoFrame(cb_data, (horizontal_>>1), vertical_, (encode_horizontal>>1),encode_vertical);
+#else
             ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+#endif
+
             if (ret < 0) {
                 printf("%d %d\n", __LINE__, (int32_t)readsize);
                 break;
             }
+#ifdef DEL_DIVISION
+            readsize = fread(cr_data, 1, (size >>1), input);
+            if (readsize != (size>>1)) {
+#else
             readsize = fread(cr_data, 1, (size /2), input);
             if (readsize != (size / 2)) {
+#endif
+
                 printf("%d\n", __LINE__);
                 break;
             }
+#ifdef DEL_DIVISION
+            ret = ComplmentVideoFrame(cr_data, (horizontal_>>1), vertical_, (encode_horizontal>>1),encode_vertical);
+#else
             ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
+#endif
+
             if (ret < 0) {
                 printf("%d %d\n", __LINE__, (int32_t)readsize);
                 break;

@@ -36,7 +36,12 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
 /* get data for one slice */
 uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
+#ifdef DEL_MULTIPLY
+    uint16_t *y = (uint16_t*)malloc(mb_size * 512);
+#else
     uint16_t *y = (uint16_t*)malloc(mb_size * MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t));
+#endif
+
     if (y == NULL ) {
         printf("%d err\n", __LINE__);
         return NULL;
@@ -45,7 +50,12 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
     for(int32_t i = 0;i<MACRO_BLOCK_Y_VERTICAL;i++) {
         memcpy(y + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
                data + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal), 
+#ifdef DEL_MULTIPLY
+               mb_size * 32);
+#else
                mb_size * MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t));
+#endif
+
     }
     return y;
 
@@ -54,7 +64,11 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
 /* for 422 */
 uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
+#ifdef DEL_MULTIPLY
+    uint16_t *c = (uint16_t*)malloc(mb_size * 256);
+#else
     uint16_t *c = (uint16_t*)malloc(mb_size * MACRO_BLOCK_422_C_HORIZONTAL * MACRO_BLOCK_422_C_VERTICAL * sizeof(uint16_t));
+#endif
     if (c == NULL ) {
         printf("%d err\n", __LINE__);
         return NULL;
@@ -63,7 +77,12 @@ uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
     for(int32_t i = 0;i<MACRO_BLOCK_422_C_VERTICAL;i++) {
         memcpy(c + i * (mb_size * MACRO_BLOCK_422_C_HORIZONTAL), 
                data + (mb_x * MACRO_BLOCK_422_C_HORIZONTAL) + ((mb_y * MACRO_BLOCK_422_C_VERTICAL) * (horizontal/2)) + (i * (horizontal/2)), 
+#ifdef DEL_MULTIPLY
+               mb_size * 16);
+#else
                mb_size * MACRO_BLOCK_422_C_HORIZONTAL * sizeof(uint16_t));
+#endif
+
     }
     return c;
 
