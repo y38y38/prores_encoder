@@ -11,9 +11,28 @@
 #include <string.h>
 #include <math.h>
 
+#include "config.h"
+
 #define MAX_X   (8)
 #define MAX_Y   (8)
-
+#if 1
+double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
+void dct_init(void)
+{
+    int h,v,x,y;
+    for (v=0;v<MAX_Y;v++) {
+        for (h=0;h<MAX_X;h++) {
+		    for(y=0;y<MAX_Y;y++) {
+        		for(x=0;x<MAX_X;x++) {
+            		kc_value[x][y][h][v] = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
+				}
+			}
+        }
+    }
+    return;
+}
+#endif
+#if 0
 static double dct(int16_t *block, int h, int v)
 {
     int x=0,y=0;
@@ -38,6 +57,8 @@ static double dct(int16_t *block, int h, int v)
     value = value / 4;
     return value;
 }
+#endif
+
 void print_block(int16_t *block)
 {
 
@@ -53,11 +74,38 @@ void print_block(int16_t *block)
 
 
 int dct_block(int16_t *block) {
-    int h,v,i;
+    int h,v,i,x,y;
+	double value;
+
     double result[MAX_X * MAX_Y];
     for (v=0;v<MAX_Y;v++) {
         for (h=0;h<MAX_X;h++) {
-            result[(v * MAX_X) + h] = dct(block, h, v);
+			value = 0;
+		    for(y=0;y<MAX_Y;y++) {
+
+        		for(x=0;x<MAX_X;x++) {
+#ifdef PRE_CALC_COS
+            		value += block[(y * 8) + x] *  kc_value[x][y][h][v];
+#else
+            		double kc = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
+            		value += block[(y * 8) + x] *  kc;
+#endif
+        		}
+    		}
+    		if ( h == 0) {
+        		value *= 1/ sqrt(2.0);
+    		} else {
+        		value *= 1;
+    		}
+    		if (v == 0) {
+        		value *= 1 / sqrt(2.0);
+    		} else {
+        		value *= 1;
+    		}
+
+    		value = value / 4;
+
+            result[(v * MAX_X) + h] = value;
         }
     }
     for(i = 0;i<MAX_X*MAX_Y;i++) {
