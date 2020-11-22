@@ -14,7 +14,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-
+#include "config.h"
 #include "dct.h"
 #include "bitstream.h"
 #include "encoder.h"
@@ -90,9 +90,15 @@ int32_t GetAbs(int32_t val)
         return val;
     }
 }
+
 void golomb_rice_code(int32_t k, uint32_t val)
 {
+#ifdef DEL_DIVISION
+    int32_t q  = val >> k;
+#else
     int32_t q  = floor( val / pow(2,k));
+#endif
+
     if (k ==0) {
         //uint32_t tmp = pow(2,k);
         //uint32_t r = val % tmp;
@@ -103,8 +109,13 @@ void golomb_rice_code(int32_t k, uint32_t val)
         setBit(1,1);
         //printf("1: 1 1    k:%d q:%d r:%d\n", k, q, r);
     } else {
+#ifdef DEL_DIVISION
+        uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
+        uint32_t r = val & (tmp -1 );
+#else
         uint32_t tmp = pow(2,k);
         uint32_t r = val % tmp;
+#endif
         uint32_t codeword = (1 << k) | r;
         setBit(codeword, q + 1 + k );
         //printf("2: %x %d\n",codeword, q+1+k);
@@ -113,10 +124,19 @@ void golomb_rice_code(int32_t k, uint32_t val)
 }
 void exp_golomb_code(int32_t k, uint32_t val)
 {
+#ifdef DEL_DIVISION
+    int32_t q = floor(log2(val + ((k==0) ? 1 : (2<<(k-1))))) - k;
+#else
     int32_t q = floor(log2(val + pow(2, k))) - k;
+#endif
+
 
     //printf("pow %f %d ", pow(2,k),val);
+#ifdef DEL_DIVISION
+    uint32_t sum = val + ((k==0) ? 1 : (2<<(k-1)));
+#else
     uint32_t sum = val + pow(2, k);
+#endif
     int32_t codeword_length = (2 * q) + k + 1;
 
     setBit(sum, codeword_length);
@@ -125,7 +145,13 @@ void exp_golomb_code(int32_t k, uint32_t val)
 }
 void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val)
 {
+#ifdef DEL_DIVISION
+//    uint32_t value = (last_rice_q + 1) * ((k_rice==0) ? 1 : (2<<(k_rice-1)));
+    uint32_t value = (last_rice_q + 1) << k_rice;
+#else
     uint32_t value = (last_rice_q + 1) * pow(2, k_rice);
+#endif
+
     if (val < value) {
         golomb_rice_code(k_rice, val);
     } else {
@@ -421,7 +447,11 @@ void pre_quant(int16_t *block, int32_t  block_num)
     for (i = 0; i < block_num; i++) {
         data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
+#ifdef DEL_DIVISION
+            data[j] = data [j] << 3;
+#else
             data[j] = data [j] * 8;
+#endif
         }
 
     }
@@ -434,7 +464,11 @@ void pre_dct(int16_t *block, int32_t  block_num)
     for (i = 0; i < block_num; i++) {
         data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
+#ifdef DEL_DIVISION
+            data[j] = (data[j] >> 1) - 256;
+#else
             data[j] = (data[j] / 2) - 256;
+#endif
         }
 
     }
@@ -477,9 +511,15 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 
     //byte aliened
     uint32_t size  = getBitSize();
+#ifdef DEL_DIVISION
+    if (size & 7 )  {
+        setBit(0x0, 8 - (size & 7));
+    }
+#else
     if (size % 8 )  {
         setBit(0x0, 8 - (size % 8));
     }
+#endif
     uint32_t current_offset = getBitSize();
     //printf("current_offset %d\n",current_offset );
     //printf("%s end\n", __FUNCTION__);
@@ -514,7 +554,11 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
 
     //byte aliened
     uint32_t size  = getBitSize();
+#ifdef DEL_DIVISION
+    if (size & 0x7 )  {
+#else
     if (size % 8 )  {
+#endif
         setBit(0x0, 8 - (size % 8));
     }
     uint32_t current_offset = getBitSize();
@@ -546,7 +590,11 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
     //byte aliened
     uint32_t size  = getBitSize();
+#ifdef DEL_DIVISION
+    if (size & 7 )  {
+#else
     if (size % 8 )  {
+#endif
         setBit(0x0, 8 - (size % 8));
     }
     uint32_t current_offset = getBitSize();

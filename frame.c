@@ -73,7 +73,11 @@ void encode_slices(struct encoder_param * param)
     uint32_t mb_x;
     uint32_t mb_y;
     uint32_t mb_x_max;
+#ifdef DEL_DIVISION
+    mb_x_max = (param->horizontal+ 15 ) >> 4;
+#else
     mb_x_max = (param->horizontal+ 15 ) / 16;
+#endif
     uint32_t slice_num_max;
 
 
@@ -85,7 +89,11 @@ void encode_slices(struct encoder_param * param)
 
     /* write dummy slice size table */
     int32_t i;
+#ifdef DEL_DIVISION
+    uint32_t slice_size_table_offset = (getBitSize()) >> 3 ;
+#else
     uint32_t slice_size_table_offset = (getBitSize()) / 8 ;
+#endif
     for (i = 0; i < slice_num_max ; i++) {
         uint16_t slice_size = 0x0;
         setByte((uint8_t*)&slice_size, 2);
@@ -184,7 +192,11 @@ void set_picture_header(struct encoder_param* param)
     uint8_t reserved = 0x0;
     setBit(reserved , 3);
 
+#ifdef DEL_DIVISION
+    picture_size_offset_ = (getBitSize()) >> 3 ;
+#else
     picture_size_offset_ = (getBitSize()) /8 ;
+#endif
 
     uint32_t picture_size = SET_DATA32(0);
     setByte((uint8_t*)&picture_size, 4);
@@ -303,7 +315,11 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 
     initBitStream();
 
+#ifdef DEL_DIVISION
+    uint32_t frame_size_offset = getBitSize() >> 3 ;
+#else
     uint32_t frame_size_offset = getBitSize() / 8 ;
+#endif
     uint32_t frame_size = SET_DATA32(0x0); 
     setByte((uint8_t*)&frame_size,4);
 
@@ -313,12 +329,20 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
     setByte((uint8_t*)&frame_identifier,4);
 
     set_frame_header(param);
-
+#ifdef DEL_DIVISION
+    uint32_t picture_size_offset = (getBitSize()) >> 3 ;
+#else
     uint32_t picture_size_offset = (getBitSize()) / 8 ;
+#endif
+
     set_picture_header(param);
 
     encode_slices(param);
+#ifdef DEL_DIVISION
+    uint32_t picture_end = (getBitSize()) >>  3 ;
+#else
     uint32_t picture_end = (getBitSize()) / 8 ;
+#endif
 
     uint32_t tmp  = picture_end - picture_size_offset;
     //printf("%x\n", tmp);
@@ -352,8 +376,14 @@ void encoder_init(void)
 }
 int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 {
+#ifdef DEL_DIVISION
+    int32_t mb_x_max = (horizontal + 15)  >> 4;
+    int32_t mb_y_max = (vertical + 15) >> 4;
+#else
     int32_t mb_x_max = (horizontal + 15)  / 16;
     int32_t mb_y_max = (vertical + 15) / 16;
+#endif
+
 
     int32_t slice_num_max;
 
@@ -378,10 +408,19 @@ int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 }
 uint32_t GetEncodeHorizontal(int32_t horizontal)
 {
+#ifdef DEL_DIVISION
+    return ((horizontal + 15)  >> 4) * 16;
+#else
     return ((horizontal + 15)  / 16) * 16;
+#endif
+
 }
 uint32_t GetEncodeVertical(int32_t vertical)
 {
+#ifdef DEL_DIVISION
+    return ((vertical + 15)  >> 4) * 16;
+#else
     return ((vertical + 15)  / 16) * 16;
+#endif
 }
 
