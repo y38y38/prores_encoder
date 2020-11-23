@@ -34,7 +34,10 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
 #define MACRO_BLOCK_422_C_VERTICAL    (16)
 
 #ifdef DEL_MALLOC
-#define MAX_SLICE_DATA_SIZE		(8*512)
+
+
+// MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t) = 512
+//mb_size * 512  
 #define MAX_SLICE_DATA_SIZE		(8*512)
 uint8_t y_slice_data[MAX_SLICE_DATA_SIZE];
 uint8_t cb_slice_data[MAX_SLICE_DATA_SIZE];
@@ -42,43 +45,30 @@ uint8_t cr_slice_data[MAX_SLICE_DATA_SIZE];
 #endif
 
 /* get data for one slice */
-uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+void  getY(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
-	//MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t) = 512
-    uint16_t *y = (uint16_t*)malloc(mb_size * 512);
-    if (y == NULL ) {
-        printf("%d err\n", __LINE__);
-        return NULL;
-    }
-
     for(int32_t i = 0;i<MACRO_BLOCK_Y_VERTICAL;i++) {
-        memcpy(y + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
-               data + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal), 
+        memcpy(out + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
+               in + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal), 
 				//MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t) = 32
                mb_size * 32);
     }
-    return y;
+    return ;
 
 }
 /* get data for one slice */
 /* for 422 */
-uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+void getC(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
-	//MACRO_BLOCK_422_C_HORIZONTAL * MACRO_BLOCK_422_C_VERTICAL * sizeof(uint16_t) = 256
-    uint16_t *c = (uint16_t*)malloc(mb_size * 256);
-    if (c == NULL ) {
-        printf("%d err\n", __LINE__);
-        return NULL;
-    }
 
     for(int32_t i = 0;i<MACRO_BLOCK_422_C_VERTICAL;i++) {
-        memcpy(c + i * (mb_size * MACRO_BLOCK_422_C_HORIZONTAL), 
-               data + (mb_x * MACRO_BLOCK_422_C_HORIZONTAL) + ((mb_y * MACRO_BLOCK_422_C_VERTICAL) * (horizontal/2)) + (i * (horizontal/2)), 
+        memcpy(out + i * (mb_size * MACRO_BLOCK_422_C_HORIZONTAL), 
+               in + (mb_x * MACRO_BLOCK_422_C_HORIZONTAL) + ((mb_y * MACRO_BLOCK_422_C_VERTICAL) * (horizontal/2)) + (i * (horizontal/2)), 
 				//MACRO_BLOCK_422_C_HORIZONTAL * sizeof(uint16_t) = 16
                mb_size * 16);
 
     }
-    return c;
+    return;
 
 }
 void encode_slices(struct encoder_param * param)
@@ -119,15 +109,13 @@ void encode_slices(struct encoder_param * param)
 
        //printf("%d %d\n", mb_x, mb_y);
        uint32_t size;
-       uint16_t *y  = getY(param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
-        uint16_t *cb;
-        uint16_t *cr;
+        getY((uint16_t*)y_slice_data, param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
         if (param->format_444 ==  true) {
-            cb = getY(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
-            cr = getY(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+            getY((uint16_t*)cb_slice_data, param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+            getY((uint16_t*)cr_slice_data, param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        } else {
-            cb = getC(param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
-            cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+            getC((uint16_t*)cb_slice_data, param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
+            getC((uint16_t*)cr_slice_data, param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        }
 
 
@@ -138,9 +126,9 @@ void encode_slices(struct encoder_param * param)
        slice_param.slice_size_in_mb= param->slice_size_in_mb;
        slice_param.horizontal= param->horizontal;
        slice_param.vertical= param->vertical;
-       slice_param.y_data= y;
-       slice_param.cb_data= cb;
-       slice_param.cr_data= cr;
+       slice_param.y_data= (uint16_t*)y_slice_data;
+       slice_param.cb_data= (uint16_t*)cb_slice_data;
+       slice_param.cr_data= (uint16_t*)cr_slice_data;
        slice_param.mb_x = 0;
        slice_param.mb_y = 0;
        slice_param.format_444 = param->format_444;
@@ -158,11 +146,6 @@ void encode_slices(struct encoder_param * param)
             mb_y++;
         }
 		
-#ifndef DEL_MALLOC
-		free(y);
-		free(cb);
-		free(cr);
-#endif
     }
 
     for (i = 0; i < slice_num_max ; i++) {
