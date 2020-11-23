@@ -23,16 +23,26 @@ static uint8_t *tmp_buf = NULL;
 static uint32_t tmp_buf_byte_offset = 0;
 static uint32_t tmp_buf_bit_offset = 0;
 
+#define MAX_BITSTREAM_SIZE	(1073741824) //1M
+uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];
+
 void initBitStream(void)
 {
+#ifdef DEL_MALLOC
+    uint8_t *buf = (uint8_t*)bitstream_buffer;
+#else
     uint8_t *buf = (uint8_t*)malloc(1000*1000*1000);
     if (buf ==NULL) {
         printf("%s %d\n", __FUNCTION__, __LINE__);
         return;
     }
+#endif
     tmp_buf_byte_offset = 0;
     tmp_buf_bit_offset = 0;
     tmp_buf  = buf;
+
+	//if delete memset, decoder error .
+	memset(bitstream_buffer, 0x0, MAX_BITSTREAM_SIZE);
     return ;
 
 }
@@ -52,6 +62,8 @@ void setBit(uint32_t buf, uint32_t size_of_bit)
     }
     uint32_t b = 32 - a;
     tmp = tmp << b;
+
+	//if not buffer clear , this is bug.
     uint8_t tmp_bit = *(tmp_buf + tmp_buf_byte_offset);
     tmp_bit = tmp_bit | ((uint8_t)(tmp>>24));
     *(tmp_buf + tmp_buf_byte_offset) = tmp_bit;

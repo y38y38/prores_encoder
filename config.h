@@ -5,4 +5,5 @@
 //#define DEL_SQRT
 #define DEL_DIVISION
 #define DEL_MULTIPLY
+#define DEL_MALLOC
 #endif
