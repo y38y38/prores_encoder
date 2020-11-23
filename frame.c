@@ -33,15 +33,19 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
 #define MACRO_BLOCK_422_C_HORIZONTAL  (8)
 #define MACRO_BLOCK_422_C_VERTICAL    (16)
 
+#ifdef DEL_MALLOC
+#define MAX_SLICE_DATA_SIZE		(8*512)
+#define MAX_SLICE_DATA_SIZE		(8*512)
+uint8_t y_slice_data[MAX_SLICE_DATA_SIZE];
+uint8_t cb_slice_data[MAX_SLICE_DATA_SIZE];
+uint8_t cr_slice_data[MAX_SLICE_DATA_SIZE];
+#endif
+
 /* get data for one slice */
 uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
-#ifdef DEL_MULTIPLY
+	//MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t) = 512
     uint16_t *y = (uint16_t*)malloc(mb_size * 512);
-#else
-    uint16_t *y = (uint16_t*)malloc(mb_size * MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t));
-#endif
-
     if (y == NULL ) {
         printf("%d err\n", __LINE__);
         return NULL;
@@ -50,12 +54,8 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
     for(int32_t i = 0;i<MACRO_BLOCK_Y_VERTICAL;i++) {
         memcpy(y + i * (mb_size * MACRO_BLOCK_Y_HORIZONTAL), 
                data + (mb_x * MACRO_BLOCK_Y_HORIZONTAL) + ((mb_y * MACRO_BLOCK_Y_VERTICAL) * horizontal) + (i * horizontal), 
-#ifdef DEL_MULTIPLY
+				//MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t) = 32
                mb_size * 32);
-#else
-               mb_size * MACRO_BLOCK_Y_HORIZONTAL * sizeof(uint16_t));
-#endif
-
     }
     return y;
 
@@ -64,11 +64,8 @@ uint16_t *getY(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
 /* for 422 */
 uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
-#ifdef DEL_MULTIPLY
+	//MACRO_BLOCK_422_C_HORIZONTAL * MACRO_BLOCK_422_C_VERTICAL * sizeof(uint16_t) = 256
     uint16_t *c = (uint16_t*)malloc(mb_size * 256);
-#else
-    uint16_t *c = (uint16_t*)malloc(mb_size * MACRO_BLOCK_422_C_HORIZONTAL * MACRO_BLOCK_422_C_VERTICAL * sizeof(uint16_t));
-#endif
     if (c == NULL ) {
         printf("%d err\n", __LINE__);
         return NULL;
@@ -77,11 +74,8 @@ uint16_t *getC(uint16_t *data, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, in
     for(int32_t i = 0;i<MACRO_BLOCK_422_C_VERTICAL;i++) {
         memcpy(c + i * (mb_size * MACRO_BLOCK_422_C_HORIZONTAL), 
                data + (mb_x * MACRO_BLOCK_422_C_HORIZONTAL) + ((mb_y * MACRO_BLOCK_422_C_VERTICAL) * (horizontal/2)) + (i * (horizontal/2)), 
-#ifdef DEL_MULTIPLY
+				//MACRO_BLOCK_422_C_HORIZONTAL * sizeof(uint16_t) = 16
                mb_size * 16);
-#else
-               mb_size * MACRO_BLOCK_422_C_HORIZONTAL * sizeof(uint16_t));
-#endif
 
     }
     return c;
@@ -92,11 +86,7 @@ void encode_slices(struct encoder_param * param)
     uint32_t mb_x;
     uint32_t mb_y;
     uint32_t mb_x_max;
-#ifdef DEL_DIVISION
     mb_x_max = (param->horizontal+ 15 ) >> 4;
-#else
-    mb_x_max = (param->horizontal+ 15 ) / 16;
-#endif
     uint32_t slice_num_max;
 
 
@@ -108,11 +98,7 @@ void encode_slices(struct encoder_param * param)
 
     /* write dummy slice size table */
     int32_t i;
-#ifdef DEL_DIVISION
     uint32_t slice_size_table_offset = (getBitSize()) >> 3 ;
-#else
-    uint32_t slice_size_table_offset = (getBitSize()) / 8 ;
-#endif
     for (i = 0; i < slice_num_max ; i++) {
         uint16_t slice_size = 0x0;
         setByte((uint8_t*)&slice_size, 2);
@@ -144,26 +130,6 @@ void encode_slices(struct encoder_param * param)
             cr = getC(param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        }
 
-#if 0
-#if 1
-       for(int i = 0;i<slice_mb_count*16*16;i++) {
-           //*(y + i) = 0x200;
-       }
-       if (mb_y %2) {
-       for(int i = 0;i<slice_mb_count*16*16/2;i++) {
-           *(cb + i) = 0x200;
-       }
-       for(int i = 0;i<slice_mb_count*16*16/2;i++) {
-           *(cr + i) = 0x200;
-       }
-       }
-#else
-       memset(y, 0x00, slice_mb_count*16*16*2);
-
-       memset(cb, 0x00, slice_mb_count*16*16*2/2);
-       memset(cr, 0x00, slice_mb_count*16*16*2/2);
-#endif
-#endif
 
        struct Slice slice_param;
        slice_param.luma_matrix = param->luma_matrix;
@@ -191,7 +157,12 @@ void encode_slices(struct encoder_param * param)
             mb_x = 0;
             mb_y++;
         }
-
+		
+#ifndef DEL_MALLOC
+		free(y);
+		free(cb);
+		free(cr);
+#endif
     }
 
     for (i = 0; i < slice_num_max ; i++) {
@@ -211,11 +182,7 @@ void set_picture_header(struct encoder_param* param)
     uint8_t reserved = 0x0;
     setBit(reserved , 3);
 
-#ifdef DEL_DIVISION
     picture_size_offset_ = (getBitSize()) >> 3 ;
-#else
-    picture_size_offset_ = (getBitSize()) /8 ;
-#endif
 
     uint32_t picture_size = SET_DATA32(0);
     setByte((uint8_t*)&picture_size, 4);
@@ -334,11 +301,7 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 
     initBitStream();
 
-#ifdef DEL_DIVISION
     uint32_t frame_size_offset = getBitSize() >> 3 ;
-#else
-    uint32_t frame_size_offset = getBitSize() / 8 ;
-#endif
     uint32_t frame_size = SET_DATA32(0x0); 
     setByte((uint8_t*)&frame_size,4);
 
@@ -348,20 +311,12 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
     setByte((uint8_t*)&frame_identifier,4);
 
     set_frame_header(param);
-#ifdef DEL_DIVISION
     uint32_t picture_size_offset = (getBitSize()) >> 3 ;
-#else
-    uint32_t picture_size_offset = (getBitSize()) / 8 ;
-#endif
 
     set_picture_header(param);
 
     encode_slices(param);
-#ifdef DEL_DIVISION
     uint32_t picture_end = (getBitSize()) >>  3 ;
-#else
-    uint32_t picture_end = (getBitSize()) / 8 ;
-#endif
 
     uint32_t tmp  = picture_end - picture_size_offset;
     //printf("%x\n", tmp);
@@ -395,13 +350,8 @@ void encoder_init(void)
 }
 int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 {
-#ifdef DEL_DIVISION
     int32_t mb_x_max = (horizontal + 15)  >> 4;
     int32_t mb_y_max = (vertical + 15) >> 4;
-#else
-    int32_t mb_x_max = (horizontal + 15)  / 16;
-    int32_t mb_y_max = (vertical + 15) / 16;
-#endif
 
 
     int32_t slice_num_max;
@@ -416,11 +366,7 @@ int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
             numMbsRemainingInRow  -=sliceSize;
 
         }
-#ifdef DEL_DIVISION
         sliceSize >>= 1;
-#else
-        sliceSize /= 2;
-#endif
     } while(numMbsRemainingInRow  > 0);
 
     number_of_slices_per_mb_row = j;
@@ -431,19 +377,11 @@ int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize)
 }
 uint32_t GetEncodeHorizontal(int32_t horizontal)
 {
-#ifdef DEL_DIVISION
     return ((horizontal + 15)  >> 4) << 4;
-#else
-    return ((horizontal + 15)  / 16) * 16;
-#endif
 
 }
 uint32_t GetEncodeVertical(int32_t vertical)
 {
-#ifdef DEL_DIVISION
     return ((vertical + 15)  >> 4) << 4;
-#else
-    return ((vertical + 15)  / 16) * 16;
-#endif
 }
 

@@ -233,7 +233,6 @@ int32_t ComplmentVideoFrame(uint16_t *data, int32_t horizontal, int32_t vertical
     return 0;
 }
 
-#ifdef DEL_MALLOC
 #define MAX_HORIZONTAL (8192)
 #define MAX_VERTICAL   (4320)
 /*  2 →１６bit */
@@ -242,7 +241,6 @@ int32_t ComplmentVideoFrame(uint16_t *data, int32_t horizontal, int32_t vertical
 uint8_t input_y_data[MAX_DATA_SIZE];
 uint8_t input_cb_data[MAX_DATA_SIZE];
 uint8_t input_cr_data[MAX_DATA_SIZE];
-#endif
 
 /*
  * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-h horizontal] [-v vertical] [-m slice_size_in_mb] -i input_file -o output_file
@@ -266,90 +264,21 @@ int main(int argc, char **argv)
     }
     int32_t encode_horizontal = GetEncodeHorizontal(horizontal_);
     int32_t encode_vertical = GetEncodeVertical(vertical_);
-#ifdef DEL_MULTIPLY
-#ifndef DEL_MALLOC
-    uint32_t encode_size = (encode_horizontal * encode_vertical) << 1;
-#endif
-#else
-    uint32_t encode_size = encode_horizontal * encode_vertical * 2;
-#endif
 
-#ifdef DEL_MALLOC
     uint16_t *y_data = (uint16_t*)input_y_data;
-#else
-    uint16_t *y_data = (uint16_t*)malloc(encode_size);
-    if (y_data == NULL) {
-        printf("%d\n", __LINE__);
-        return 0;
-    }
-
-#endif
 
     uint16_t *cb_data;
     uint16_t *cr_data;
     if (format_444_ == true) {
         //printf("444 %d\n", encode_size);
-        /* for 422 */
-#ifdef DEL_MALLOC
+        /* for 444 */
         cb_data = (uint16_t*)input_cb_data;
         cr_data = (uint16_t*)input_cr_data;
-#else
-        cb_data = (uint16_t*)malloc(encode_size);
-        if (cb_data == NULL) {
-            printf("%d\n", __LINE__);
-            return 0;
-        }
-        /* for 422 */
-        cr_data = (uint16_t*)malloc(encode_size);
-        if (cr_data == NULL) {
-            printf("%d\n", __LINE__);
-            return 0;
-        }
-#endif
     } else {
-#ifdef DEL_DIVISION
-#ifdef DEL_MALLOC
-        cb_data = (uint16_t*)input_cb_data;
-#else
-        cb_data = (uint16_t*)malloc(encode_size>>1);
-#endif
-
-#else
-#ifdef DEL_MALLOC
-        cb_data = (uint16_t*)input_cb_data;
-#else
-        cb_data = (uint16_t*)malloc(encode_size/2);
-#endif
-#endif
-
-#ifndef DEL_MALLOC
-        if (cb_data == NULL) {
-            printf("%d\n", __LINE__);
-            return 0;
-        }
-#endif
-
         /* for 422 */
-#ifdef DEL_DIVISION
-#ifdef DEL_MALLOC
+        cb_data = (uint16_t*)input_cb_data;
         cr_data = (uint16_t*)input_cr_data;
-#else
-        cr_data = (uint16_t*)malloc(encode_size>>1);
-#endif
-#else
-#ifdef DEL_MALLOC
-        cr_data = (uint16_t*)input_cr_data;
-#else
-        cr_data = (uint16_t*)malloc(encode_size/2);
-#endif
-#endif
 
-#ifndef DEL_MALLOC
-        if (cr_data == NULL) {
-            printf("%d\n", __LINE__);
-            return 0;
-        }
-#endif
     }
     struct encoder_param param;
     param.luma_matrix = luma_matrix2_;
@@ -366,11 +295,7 @@ int main(int argc, char **argv)
 
     encoder_init();
 
-#ifdef DEL_MULTIPLY
     uint32_t size = (horizontal_ * vertical_) << 1;
-#else
-    uint32_t size = horizontal_ * vertical_ * 2;
-#endif
     for (int32_t i=0;;i++) {
         //printf("%d\n", size);
         size_t readsize = fread(y_data, 1, size, input);
@@ -412,44 +337,24 @@ int main(int argc, char **argv)
                 break;
             }
         } else {
-#ifdef DEL_DIVISION
             readsize = fread(cb_data, 1, (size>>1 ), input);
             if (readsize != (size>>1)) {
-#else
-            readsize = fread(cb_data, 1, (size/2 ), input);
-            if (readsize != (size / 2)) {
-#endif
 
                 printf("%d %d %d\n", __LINE__,(int)readsize, size);
                 break;
             }
-#ifdef DEL_DIVISION
             ret = ComplmentVideoFrame(cb_data, (horizontal_>>1), vertical_, (encode_horizontal>>1),encode_vertical);
-#else
-            ret = ComplmentVideoFrame(cb_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
-#endif
-
             if (ret < 0) {
                 printf("%d %d\n", __LINE__, (int32_t)readsize);
                 break;
             }
-#ifdef DEL_DIVISION
             readsize = fread(cr_data, 1, (size >>1), input);
             if (readsize != (size>>1)) {
-#else
-            readsize = fread(cr_data, 1, (size /2), input);
-            if (readsize != (size / 2)) {
-#endif
 
                 printf("%d\n", __LINE__);
                 break;
             }
-#ifdef DEL_DIVISION
             ret = ComplmentVideoFrame(cr_data, (horizontal_>>1), vertical_, (encode_horizontal>>1),encode_vertical);
-#else
-            ret = ComplmentVideoFrame(cr_data, (horizontal_/2), vertical_, (encode_horizontal/2),encode_vertical);
-#endif
-
             if (ret < 0) {
                 printf("%d %d\n", __LINE__, (int32_t)readsize);
                 break;
@@ -465,10 +370,6 @@ int main(int argc, char **argv)
             //printf("write %d %p %d %p \n", (int)writesize, raw_data, raw_size,output);
             return -1;
         }
-#ifndef DEL_MALLOC
-		//bitstream.c
-        free(frame);
-#endif
         /* limit one frame */
         if (i==1) {
           //break;
@@ -476,11 +377,6 @@ int main(int argc, char **argv)
         //printf("end frame\n");
         //printf(".");
     }
-#ifndef DEL_MALLOC
-    free(y_data);
-    free(cb_data);
-    free(cr_data);
-#endif
     fclose(input);
     fclose(output);
 
