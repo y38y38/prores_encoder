@@ -15,6 +15,12 @@
 #define MATRIX_COLUMN_NUM  (8)
 #define MATRIX_NUM (MATRIX_ROW_NUM*MATRIX_COLUMN_NUM)
 
+
+//max 8192 x 4096
+#define MAX_SLICE_NUM	(131072)
+
+
+
 struct encoder_param {
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;

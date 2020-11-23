@@ -21,7 +21,7 @@ uint8_t luma_matrix2_[MATRIX_NUM];
 uint8_t chroma_matrix2_[MATRIX_NUM];
 
 uint32_t qscale_table_size_ = 0;
-uint8_t *qscale_table_ = NULL;
+uint8_t  qscale_table_[MAX_SLICE_NUM];
 uint32_t slice_size_in_mb_ = 0;
 uint32_t horizontal_ = 0;
 uint32_t vertical_ = 0;
@@ -95,21 +95,18 @@ int32_t SetDefaultLumaMatrix(void)
     memset(luma_matrix2_, 0x4, MATRIX_NUM);
     return 0x0;
 }
+
+
 int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
 {
     //printf("table_size %d\n", table_size);
-
-    qscale_table_ = (uint8_t*)malloc(table_size * sizeof(uint8_t));
-    if (qscale_table_ == NULL) {
-        printf("malloc %d\n", __LINE__);
-        return -1;
-    }
     return Text2Matrix(qscale_file, qscale_table_ , 1, table_size);
 }
 
 #define DEFAULT_HORIZONTAL   (128)
 #define DEFAULT_VERTICAL  (16)
 #define DEFAULT_SLICE_SIZE_IN_MB (8)
+
 int32_t GetParam(int argc, char **argv)
 {
     char *luma_matrix_file = NULL;

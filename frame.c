@@ -71,6 +71,9 @@ void getC(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_
     return;
 
 }
+
+uint16_t slice_size_table[MAX_SLICE_NUM];
+
 void encode_slices(struct encoder_param * param)
 {
     uint32_t mb_x;
@@ -94,11 +97,6 @@ void encode_slices(struct encoder_param * param)
         setByte((uint8_t*)&slice_size, 2);
     }
 
-    uint16_t *slice_size_table = (uint16_t*)malloc(slice_num_max * sizeof(uint16_t));
-    if (slice_size_table  == NULL) {
-        printf("err %d\n", __LINE__);
-        return; 
-    }
     slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
@@ -151,7 +149,6 @@ void encode_slices(struct encoder_param * param)
     for (i = 0; i < slice_num_max ; i++) {
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
     }
-    free(slice_size_table);
     
 }
 
