@@ -33,8 +33,6 @@ void initBitStream(void)
     tmp_buf_bit_offset = 0;
     tmp_buf  = buf;
 
-	//if delete memset, decoder error .
-	memset(bitstream_buffer, 0x0, MAX_BITSTREAM_SIZE);
     return ;
 
 }
@@ -55,8 +53,12 @@ void setBit(uint32_t buf, uint32_t size_of_bit)
     uint32_t b = 32 - a;
     tmp = tmp << b;
 
-	//if not buffer clear , this is bug.
-    uint8_t tmp_bit = *(tmp_buf + tmp_buf_byte_offset);
+	uint8_t tmp_bit;
+	if (tmp_buf_bit_offset != 0x0) {
+    	tmp_bit = *(tmp_buf + tmp_buf_byte_offset);
+	} else {
+    	tmp_bit = 0;
+	}
     tmp_bit = tmp_bit | ((uint8_t)(tmp>>24));
     *(tmp_buf + tmp_buf_byte_offset) = tmp_bit;
     //printf("set %x %x %x %x\n", tmp_bit,((uint8_t)(tmp>>16)),((uint8_t)(tmp>>8)),((uint8_t)(tmp)));
