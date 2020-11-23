@@ -329,12 +329,6 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
 void getYDataToBlock(uint16_t *dst, uint16_t*src,uint32_t mb_x, uint32_t mb_y, uint32_t mb_size)
 {
     uint16_t pixel_data[MAX_MB_SIZE_IN_MB * MB_IN_BLOCK* BLOCK_IN_PIXEL * sizeof(uint16_t)];
-    // macro block num * block num per macro  block * pixel num per block * pixel size
-//    uint16_t *y_slice = (uint16_t*)malloc((mb_size * MB_IN_BLOCK) * BLOCK_IN_PIXEL * sizeof(uint16_t));
-//    if (y_slice == NULL) {
-//        printf("errr  %d\n", __LINE__);
-//        return NULL;
-//    }
     int32_t i;
     for (i=0;i<MB_VERTIVAL_IN_PIXEL;i++) {
         memcpy(pixel_data + (i * (MB_HORIZONTAL_Y_IN_PIXEL* mb_size)), 
@@ -373,12 +367,6 @@ void getCbDataToBlock(uint16_t *dst, uint16_t*src,uint32_t mb_x, uint32_t mb_y, 
     //for (i=0;i<16;i++) {
 
     uint16_t pixel_data[MAX_MB_SIZE_IN_MB * MB_IN_BLOCK * BLOCK_IN_PIXEL * sizeof(uint16_t)];
-    // macro block num * block num per macro  block * pixel num per block * pixel size
-//    uint16_t *cb_slice = (uint16_t*)malloc((mb_size * MB_IN_BLOCK) * BLOCK_IN_PIXEL * sizeof(uint16_t));
-//    if (cb_slice == NULL) {
-//        printf("errr  %d\n", __LINE__);
-//        return NULL;
-//    }
     for (i=0;i<MB_VERTIVAL_IN_PIXEL;i++) {
         memcpy(pixel_data + (i * (MB_HORIZONTAL_422C_IN_PIXEL * mb_size)), 
                src + (mb_x * MB_HORIZONTAL_422C_IN_PIXEL)  + ((mb_y * MB_VERTIVAL_IN_PIXEL) * mb_size*MB_HORIZONTAL_422C_IN_PIXEL ) + (i * (mb_size*MB_HORIZONTAL_422C_IN_PIXEL )), 
