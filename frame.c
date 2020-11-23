@@ -33,7 +33,6 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
 #define MACRO_BLOCK_422_C_HORIZONTAL  (8)
 #define MACRO_BLOCK_422_C_VERTICAL    (16)
 
-#ifdef DEL_MALLOC
 
 
 // MACRO_BLOCK_Y_HORIZONTAL * MACRO_BLOCK_Y_VERTICAL * sizeof(uint16_t) = 512
@@ -42,7 +41,6 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
 uint8_t y_slice_data[MAX_SLICE_DATA_SIZE];
 uint8_t cb_slice_data[MAX_SLICE_DATA_SIZE];
 uint8_t cr_slice_data[MAX_SLICE_DATA_SIZE];
-#endif
 
 /* get data for one slice */
 void  getY(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
