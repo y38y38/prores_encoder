@@ -97,11 +97,7 @@ int dct_block(int16_t *block) {
 			//double can't shift
     		value = value / 4;
 
-#ifdef DEL_DIVISION
             result[(v << 3) + h] = value;
-#else
-            result[(v * MAX_X) + h] = value;
-#endif
         }
     }
     for(i = 0;i<MAX_X*MAX_Y;i++) {
