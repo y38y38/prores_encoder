@@ -325,19 +325,20 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
 #define BLOCK_HORIZONTAL_IN_PIXEL     (8)
 #define BLOCK_VERTIVAL_IN_PIXEL       (8)
 
-uint16_t * getYDataToBlock(uint16_t*y_data,uint32_t mb_x, uint32_t mb_y, uint32_t mb_size)
+
+void getYDataToBlock(uint16_t *dst, uint16_t*src,uint32_t mb_x, uint32_t mb_y, uint32_t mb_size)
 {
     uint16_t pixel_data[MAX_MB_SIZE_IN_MB * MB_IN_BLOCK* BLOCK_IN_PIXEL * sizeof(uint16_t)];
     // macro block num * block num per macro  block * pixel num per block * pixel size
-    uint16_t *y_slice = (uint16_t*)malloc((mb_size * MB_IN_BLOCK) * BLOCK_IN_PIXEL * sizeof(uint16_t));
-    if (y_slice == NULL) {
-        printf("errr  %d\n", __LINE__);
-        return NULL;
-    }
+//    uint16_t *y_slice = (uint16_t*)malloc((mb_size * MB_IN_BLOCK) * BLOCK_IN_PIXEL * sizeof(uint16_t));
+//    if (y_slice == NULL) {
+//        printf("errr  %d\n", __LINE__);
+//        return NULL;
+//    }
     int32_t i;
     for (i=0;i<MB_VERTIVAL_IN_PIXEL;i++) {
         memcpy(pixel_data + (i * (MB_HORIZONTAL_Y_IN_PIXEL* mb_size)), 
-               y_data + (mb_x * MB_HORIZONTAL_Y_IN_PIXEL)  + ((mb_y * MB_VERTIVAL_IN_PIXEL) * mb_size * MB_HORIZONTAL_Y_IN_PIXEL) + (i * mb_size * MB_HORIZONTAL_Y_IN_PIXEL), 
+               src + (mb_x * MB_HORIZONTAL_Y_IN_PIXEL)  + ((mb_y * MB_VERTIVAL_IN_PIXEL) * mb_size * MB_HORIZONTAL_Y_IN_PIXEL) + (i * mb_size * MB_HORIZONTAL_Y_IN_PIXEL), 
                MB_HORIZONTAL_Y_IN_PIXEL* mb_size * sizeof(uint16_t));
     }
     int32_t vertical;
@@ -355,20 +356,17 @@ uint16_t * getYDataToBlock(uint16_t*y_data,uint32_t mb_x, uint32_t mb_y, uint32_
                 } else {
                     block_position =  (mb_size * MB_HORIZONTAL_Y_IN_PIXEL* BLOCK_VERTIVAL_IN_PIXEL) + BLOCK_HORIZONTAL_IN_PIXEL;
                 }
-                memcpy(y_slice + (i * (MB_HORIZONTAL_Y_IN_PIXEL * MB_VERTIVAL_IN_PIXEL)) +  (block * BLOCK_IN_PIXEL) + (vertical * BLOCK_HORIZONTAL_IN_PIXEL) , 
+                memcpy(dst + (i * (MB_HORIZONTAL_Y_IN_PIXEL * MB_VERTIVAL_IN_PIXEL)) +  (block * BLOCK_IN_PIXEL) + (vertical * BLOCK_HORIZONTAL_IN_PIXEL) , 
                         pixel_data + ( MB_HORIZONTAL_Y_IN_PIXEL * i) + block_position + vertical * (mb_size * MB_HORIZONTAL_Y_IN_PIXEL),
                         BLOCK_HORIZONTAL_IN_PIXEL * sizeof(uint16_t));
             }
         }
 
     }
-    return y_slice;
-
-
-
+    return;
 }
 
-uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint32_t mb_size)
+void getCbDataToBlock(uint16_t *dst, uint16_t*src,uint32_t mb_x, uint32_t mb_y, uint32_t mb_size)
 {
     //test_data(cb_data);
     int32_t i;
@@ -376,14 +374,14 @@ uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint3
 
     uint16_t pixel_data[MAX_MB_SIZE_IN_MB * MB_IN_BLOCK * BLOCK_IN_PIXEL * sizeof(uint16_t)];
     // macro block num * block num per macro  block * pixel num per block * pixel size
-    uint16_t *cb_slice = (uint16_t*)malloc((mb_size * MB_IN_BLOCK) * BLOCK_IN_PIXEL * sizeof(uint16_t));
-    if (cb_slice == NULL) {
-        printf("errr  %d\n", __LINE__);
-        return NULL;
-    }
+//    uint16_t *cb_slice = (uint16_t*)malloc((mb_size * MB_IN_BLOCK) * BLOCK_IN_PIXEL * sizeof(uint16_t));
+//    if (cb_slice == NULL) {
+//        printf("errr  %d\n", __LINE__);
+//        return NULL;
+//    }
     for (i=0;i<MB_VERTIVAL_IN_PIXEL;i++) {
         memcpy(pixel_data + (i * (MB_HORIZONTAL_422C_IN_PIXEL * mb_size)), 
-               cb_data + (mb_x * MB_HORIZONTAL_422C_IN_PIXEL)  + ((mb_y * MB_VERTIVAL_IN_PIXEL) * mb_size*MB_HORIZONTAL_422C_IN_PIXEL ) + (i * (mb_size*MB_HORIZONTAL_422C_IN_PIXEL )), 
+               src + (mb_x * MB_HORIZONTAL_422C_IN_PIXEL)  + ((mb_y * MB_VERTIVAL_IN_PIXEL) * mb_size*MB_HORIZONTAL_422C_IN_PIXEL ) + (i * (mb_size*MB_HORIZONTAL_422C_IN_PIXEL )), 
                MB_HORIZONTAL_422C_IN_PIXEL * mb_size * sizeof(uint16_t));
     }
 
@@ -400,7 +398,7 @@ uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint3
                 } else  {
                     block_position =  mb_size * MB_HORIZONTAL_422C_IN_PIXEL * BLOCK_VERTIVAL_IN_PIXEL;
                 }
-                memcpy(cb_slice + (i * (MB_HORIZONTAL_422C_IN_PIXEL * MB_VERTIVAL_IN_PIXEL)) +  (block * BLOCK_IN_PIXEL) + (vertical * BLOCK_HORIZONTAL_IN_PIXEL) , 
+                memcpy(dst + (i * (MB_HORIZONTAL_422C_IN_PIXEL * MB_VERTIVAL_IN_PIXEL)) +  (block * BLOCK_IN_PIXEL) + (vertical * BLOCK_HORIZONTAL_IN_PIXEL) , 
                         pixel_data + ( MB_HORIZONTAL_422C_IN_PIXEL  * i) + block_position + vertical * (mb_size * MB_HORIZONTAL_422C_IN_PIXEL),
                         BLOCK_HORIZONTAL_IN_PIXEL * sizeof(uint16_t));
                 //printf("%x %d ", pixel_data[0], ( 8 * i) + block_position + vertical * (mb_size * 8));
@@ -408,7 +406,7 @@ uint16_t * getCbDataToBlock(uint16_t*cb_data,uint32_t mb_x, uint32_t mb_y, uint3
         }
 
     }
-    return cb_slice;
+    return;
 
 
 
@@ -473,6 +471,14 @@ void pre_dct(int16_t *block, int32_t  block_num)
 
     }
 }
+// macro block num * block num per macro  block * pixel num per block * pixel size
+// (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
+#define MAX_SLICE_DATA	(2048)
+
+int16_t y_slice[MAX_SLICE_DATA];
+int16_t cb_slice[MAX_SLICE_DATA];
+int16_t cr_slice[MAX_SLICE_DATA];
+
 uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
 {
     //print_slice(y_data, 8);
@@ -480,7 +486,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     uint32_t start_offset= getBitSize();
     //printf("start_offset %d\n", start_offset);
 
-    int16_t *y_slice = (int16_t*)getYDataToBlock(y_data,mb_x,mb_y,slice_size_in_mb);
+    getYDataToBlock((uint16_t*)y_slice, y_data,mb_x,mb_y,slice_size_in_mb);
 
     //printf("before\n");
     //print_pixels(y_slice, 8);
@@ -511,15 +517,9 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 
     //byte aliened
     uint32_t size  = getBitSize();
-#ifdef DEL_DIVISION
     if (size & 7 )  {
         setBit(0x0, 8 - (size & 7));
     }
-#else
-    if (size % 8 )  {
-        setBit(0x0, 8 - (size % 8));
-    }
-#endif
     uint32_t current_offset = getBitSize();
     //printf("current_offset %d\n",current_offset );
     //printf("%s end\n", __FUNCTION__);
@@ -530,7 +530,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("cb start\n");
     uint32_t start_offset= getBitSize();
 
-    int16_t *cb_slice = (int16_t*)getCbDataToBlock(cb_data,mb_x,mb_y,slice_size_in_mb);
+    getCbDataToBlock((uint16_t*)cb_slice, cb_data,mb_x,mb_y,slice_size_in_mb);
 
     pre_dct(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
@@ -554,11 +554,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
 
     //byte aliened
     uint32_t size  = getBitSize();
-#ifdef DEL_DIVISION
     if (size & 0x7 )  {
-#else
-    if (size % 8 )  {
-#endif
         setBit(0x0, 8 - (size % 8));
     }
     uint32_t current_offset = getBitSize();
@@ -570,7 +566,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
 
-    int16_t *cr_slice = (int16_t*)getCbDataToBlock(cr_data,mb_x,mb_y,slice_size_in_mb);
+    getCbDataToBlock((uint16_t*)cr_slice, cr_data,mb_x,mb_y,slice_size_in_mb);
 
     pre_dct(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
@@ -590,11 +586,7 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
     //byte aliened
     uint32_t size  = getBitSize();
-#ifdef DEL_DIVISION
     if (size & 7 )  {
-#else
-    if (size % 8 )  {
-#endif
         setBit(0x0, 8 - (size % 8));
     }
     uint32_t current_offset = getBitSize();
