@@ -433,11 +433,7 @@ void pre_quant(int16_t *block, int32_t  block_num)
     for (i = 0; i < block_num; i++) {
         data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
-#ifdef DEL_DIVISION
             data[j] = data [j] << 3;
-#else
-            data[j] = data [j] * 8;
-#endif
         }
 
     }
@@ -450,11 +446,7 @@ void pre_dct(int16_t *block, int32_t  block_num)
     for (i = 0; i < block_num; i++) {
         data = block + (i*BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
-#ifdef DEL_DIVISION
             data[j] = (data[j] >> 1) - 256;
-#else
-            data[j] = (data[j] / 2) - 256;
-#endif
         }
 
     }
