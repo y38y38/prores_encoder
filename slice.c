@@ -399,6 +399,79 @@ void getCbDataToBlock(uint16_t *dst, uint16_t*src,uint32_t mb_x, uint32_t mb_y, 
 
 
 }
+void getYver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
+{
+	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
+	int i;
+	for(i=0;i<8;i++) {
+		memcpy(out + (i*8),
+		in + x + (horizontal * y) + (horizontal * i),
+		8 * sizeof(uint16_t));
+	//	printf(" %x\n", *(uint16_t*)(in + x + (horizontal * y) + (horizontal * i)));
+	}
+}
+//get 1 slice data
+void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+{
+	int i;
+    int32_t block;
+	int offset_x,offset_y;
+    for (i=0;i<mb_size;i++) {
+        for (block = 0 ; block < MB_IN_BLOCK;block++) {
+			if (block == 0) {
+				offset_x = 0;
+				offset_y = 0;
+			} else if (block == 1) {
+				offset_x = 8;
+				offset_y = 0;
+			} else if (block == 2) {
+				offset_x = 0;
+				offset_y = 8;
+			} else {
+				offset_x = 8;
+				offset_y = 8;
+			}
+			getYver2block(out  +  i * 64 * 4 + (block * 64), in, (mb_x * 16) + (i * 16) + offset_x, (mb_y * 16) + offset_y, horizontal, vertical);
+        }
+
+    }
+	return;
+}
+
+void getCver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
+{
+	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
+	int i;
+	for(i=0;i<8;i++) {
+		memcpy(out + (i*8),
+		in + x + (horizontal * y) + (horizontal * i),
+		8 * sizeof(uint16_t));
+		//printf(" %x\n", *(uint16_t*)(in + x + (horizontal * y) + (horizontal * i)));
+	}
+}
+//get 1 slice data
+void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+{
+	int i;
+    int32_t block;
+	int offset_x,offset_y;
+    for (i=0;i<mb_size;i++) {
+        for (block = 0 ; block < MB_422C_IN_BLCCK;block++) {
+			if (block == 0) {
+				offset_x = 0;
+				offset_y = 0;
+			} else {
+				offset_x = 0;
+				offset_y = 8;
+			}
+			getCver2block(out  +  (i * 64 * 2) + (block * 64), in, (mb_x * 8) + (i * 8) + offset_x, (mb_y * 16) + offset_y, horizontal>>1, vertical);
+        }
+
+    }
+	return;
+}
+
+
 void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 {
 
@@ -459,14 +532,24 @@ int16_t y_slice[MAX_SLICE_DATA];
 int16_t cb_slice[MAX_SLICE_DATA];
 int16_t cr_slice[MAX_SLICE_DATA];
 
-uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
+uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
 {
     //print_slice(y_data, 8);
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
     //printf("start_offset %d\n", start_offset);
 
-    getYDataToBlock((uint16_t*)y_slice, y_data,mb_x,mb_y,slice_size_in_mb);
+//    getYDataToBlock((uint16_t*)y_slice, y_data,mb_x,mb_y,slice_size_in_mb);
+#if 0
+	static int first = 0;
+	if (first == 0) {
+		FILE* output = fopen("aa.yuv", "w");
+		fwrite(y_slice, 1, 8 * 16 * 16 * 2, output);
+		fclose(output);
+		first = 1;
+	}
+#endif
+	getYver2((uint16_t*)y_slice, y_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
 
     //printf("before\n");
     //print_pixels(y_slice, 8);
@@ -505,12 +588,13 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
+uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
 {
     //printf("cb start\n");
     uint32_t start_offset= getBitSize();
 
-    getCbDataToBlock((uint16_t*)cb_slice, cb_data,mb_x,mb_y,slice_size_in_mb);
+    //getCbDataToBlock((uint16_t*)cb_slice, cb_data,mb_x,mb_y,slice_size_in_mb);
+	getCver2((uint16_t*)cb_slice, cb_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
 
     pre_dct(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
@@ -541,12 +625,13 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb)
+uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
 {
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize();
 
-    getCbDataToBlock((uint16_t*)cr_slice, cr_data,mb_x,mb_y,slice_size_in_mb);
+//    getCbDataToBlock((uint16_t*)cr_slice, cr_data,mb_x,mb_y,slice_size_in_mb);
+	getCver2((uint16_t*)cr_slice, cr_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
 
     pre_dct(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
@@ -606,24 +691,24 @@ uint32_t encode_slice(struct Slice *param)
 
     //printf("%s start\n", __FUNCTION__);
 
-    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb);
+    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
     
     uint16_t cb_size;
     if (param->format_444 == true) {
-        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
         cb_size = SET_DATA16(size);
         //printf("cb %d\n", size);
         //exit(1);
-        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
     } else {
-        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
         cb_size = SET_DATA16(size);
         //printf("cb %d\n", size);
         //exit(1);
-        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb);
+        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
     }
 
     //uint16_t cr_size = SET_DATA16(size);

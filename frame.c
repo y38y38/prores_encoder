@@ -105,6 +105,7 @@ void encode_slices(struct encoder_param * param)
 
        //printf("%d %d\n", mb_x, mb_y);
        uint32_t size;
+#if 0
         getY((uint16_t*)y_slice_data, param->y_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
         if (param->format_444 ==  true) {
             getY((uint16_t*)cb_slice_data, param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
@@ -113,7 +114,7 @@ void encode_slices(struct encoder_param * param)
             getC((uint16_t*)cb_slice_data, param->cb_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
             getC((uint16_t*)cr_slice_data, param->cr_data, mb_x,mb_y,slice_mb_count, param->horizontal, param->vertical);
        }
-
+#endif
 
        struct Slice slice_param;
        slice_param.luma_matrix = param->luma_matrix;
@@ -122,11 +123,19 @@ void encode_slices(struct encoder_param * param)
        slice_param.slice_size_in_mb= param->slice_size_in_mb;
        slice_param.horizontal= param->horizontal;
        slice_param.vertical= param->vertical;
+#if 0
        slice_param.y_data= (uint16_t*)y_slice_data;
        slice_param.cb_data= (uint16_t*)cb_slice_data;
        slice_param.cr_data= (uint16_t*)cr_slice_data;
        slice_param.mb_x = 0;
        slice_param.mb_y = 0;
+#else
+       slice_param.y_data= (uint16_t*)param->y_data;
+       slice_param.cb_data= (uint16_t*)param->cb_data;
+       slice_param.cr_data= (uint16_t*)param->cr_data;
+       slice_param.mb_x = mb_x;
+       slice_param.mb_y = mb_y;
+#endif
        slice_param.format_444 = param->format_444;
 
        //size = encode_slice(y_data, cb_data, cr_data, mb_x, mb_y, slice_size);
