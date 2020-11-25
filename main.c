@@ -259,6 +259,8 @@ int main(int argc, char **argv)
         printf("err %s\n", output_file_);
         return -1;
     }
+
+	// do x16 size for macro block.
     int32_t encode_horizontal = GetEncodeHorizontal(horizontal_);
     int32_t encode_vertical = GetEncodeVertical(vertical_);
 
