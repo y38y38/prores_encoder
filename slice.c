@@ -93,11 +93,7 @@ int32_t GetAbs(int32_t val)
 
 void golomb_rice_code(int32_t k, uint32_t val)
 {
-#ifdef DEL_DIVISION
     int32_t q  = val >> k;
-#else
-    int32_t q  = floor( val / pow(2,k));
-#endif
 
     if (k ==0) {
         //uint32_t tmp = pow(2,k);
@@ -109,13 +105,9 @@ void golomb_rice_code(int32_t k, uint32_t val)
         setBit(1,1);
         //printf("1: 1 1    k:%d q:%d r:%d\n", k, q, r);
     } else {
-#ifdef DEL_DIVISION
         uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
         uint32_t r = val & (tmp -1 );
-#else
-        uint32_t tmp = pow(2,k);
-        uint32_t r = val % tmp;
-#endif
+
         uint32_t codeword = (1 << k) | r;
         setBit(codeword, q + 1 + k );
         //printf("2: %x %d\n",codeword, q+1+k);
@@ -124,19 +116,12 @@ void golomb_rice_code(int32_t k, uint32_t val)
 }
 void exp_golomb_code(int32_t k, uint32_t val)
 {
-#ifdef DEL_DIVISION
+
+	//LOG
     int32_t q = floor(log2(val + ((k==0) ? 1 : (2<<(k-1))))) - k;
-#else
-    int32_t q = floor(log2(val + pow(2, k))) - k;
-#endif
 
-
-    //printf("pow %f %d ", pow(2,k),val);
-#ifdef DEL_DIVISION
     uint32_t sum = val + ((k==0) ? 1 : (2<<(k-1)));
-#else
-    uint32_t sum = val + pow(2, k);
-#endif
+
     int32_t codeword_length = (2 * q) + k + 1;
 
     setBit(sum, codeword_length);
@@ -145,12 +130,7 @@ void exp_golomb_code(int32_t k, uint32_t val)
 }
 void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val)
 {
-#ifdef DEL_DIVISION
-//    uint32_t value = (last_rice_q + 1) * ((k_rice==0) ? 1 : (2<<(k_rice-1)));
     uint32_t value = (last_rice_q + 1) << k_rice;
-#else
-    uint32_t value = (last_rice_q + 1) * pow(2, k_rice);
-#endif
 
     if (val < value) {
         golomb_rice_code(k_rice, val);
