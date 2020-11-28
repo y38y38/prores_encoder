@@ -14,7 +14,31 @@ struct thread_param {
 	pthread_mutex_t *next_thread_mutex;
 };
 
+//先頭からシーケンシャルにライトしたい。そのため、前のThread(Slice)が書き終わるのを待つ。
+void wait_write_bitstream(struct thread_param * param)
+{
+	if (param->my_thread_mutex != NULL ) {
+		int ret = pthread_mutex_lock(param->my_thread_mutex);
+		if (ret != 0) {
+			printf("%d\n", __LINE__);
+			return;
+		}
+	}
+	return;
+}
 
+//自分はライトが終わったので、次のSliceがライトしても良いようにする。
+void start_next_bitstream(struct thread_param *param)
+{
+	if (param->next_thread_mutex != NULL ) {
+		int ret = pthread_mutex_unlock(param->next_thread_mutex);
+		if (ret != 0) {
+			printf("%d\n", __LINE__);
+			return;
+		}
+	}
+	return;
+}
 
 void *thread_start_routin(void *arg)
 {
@@ -25,23 +49,21 @@ void *thread_start_routin(void *arg)
 	for (i = 0; i< num % MAX_PRINT_NUM;i++) {
 		printf("dct %d %d %d\n", param->seq, (num %10), i);
 	}
-	if (param->my_thread_mutex != NULL ) {
-		pthread_mutex_lock(param->my_thread_mutex);
-	}
+
+	wait_write_bitstream(param);
+
 	num = rand();
 	for (i = 0; i< num % MAX_PRINT_NUM;i++) {
 //		printf("mem write %d %d %d\n", param->seq, (num %10), i);
 	}
 //	printf("end %d\n", param->seq);
-	if (param->next_thread_mutex != NULL ) {
-		pthread_mutex_unlock(param->next_thread_mutex);
-	}
+	start_next_bitstream(param);
 	
 	free(arg);
-
 	pthread_exit(NULL);
 }
 
+pthread_t thread[MAX_SEQ_NUMBER];
 
 int main()
 {
@@ -50,19 +72,14 @@ int main()
 	int thread_number = 0;
 	int end_thread_number = 0;
 
-	pthread_attr_t attr;
 
 	pthread_mutex_t *next_thread_mutex = NULL;
 	pthread_mutex_t *current_thread_mutex = NULL;
-	pthread_t thread[MAX_SEQ_NUMBER];
 
 	for(seq_number=0;seq_number < MAX_SEQ_NUMBER;seq_number++) {
+
+
 		current_thread_mutex = next_thread_mutex;
-		int ret = pthread_attr_init(&attr);
-		if (ret != 0) {
-			printf("%d\n", __LINE__);
-			return -1;
-		}
 		struct thread_param * param = (struct thread_param*)malloc(sizeof(struct thread_param));
 		param->seq = seq_number; 
 		param->my_thread_mutex = current_thread_mutex;
@@ -89,6 +106,12 @@ int main()
 		} else {
 		}
 		
+		pthread_attr_t attr;
+		int ret = pthread_attr_init(&attr);
+		if (ret != 0) {
+			printf("%d\n", __LINE__);
+			return -1;
+		}
 		ret = pthread_create(&thread[seq_number], &attr, &thread_start_routin, (void*)param);
 		if (ret != 0) {
 			printf("%d\n", __LINE__);
@@ -105,6 +128,7 @@ int main()
 			}
 
 		}
+
 
 	}
 	if (end_thread_number != MAX_SEQ_NUMBER) {
