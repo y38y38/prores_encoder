@@ -642,6 +642,8 @@ uint8_t qScale2quantization_index(uint8_t qscale)
 {
     return qscale;
 }
+void write_slice_size(int slice_no, int size);
+
 uint32_t encode_slice(struct Slice *param)
 {
     uint32_t start_offset= getBitSize();
@@ -669,7 +671,7 @@ uint32_t encode_slice(struct Slice *param)
 
 
 
-    //printf("%s start\n", __FUNCTION__);
+    printf("%s start %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
 
     size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
     //exit(1);
@@ -697,6 +699,9 @@ uint32_t encode_slice(struct Slice *param)
     //printf("%d %x\n",code_size_of_y_data_offset,code_size_of_y_data_offset); 
     setByteInOffset(code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize();
+
+	write_slice_size(param->slice_no, ((current_offset - start_offset)/8));
+    printf("%s end %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
     return ((current_offset - start_offset)/8);
 }
 

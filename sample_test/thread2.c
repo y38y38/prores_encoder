@@ -25,7 +25,6 @@ struct Slice {
 struct thread_param {
 //	int seq;
 	int thread_no;
-	pthread_mutex_t  my_thread_mutex;
 //	pthread_cond_t  my_thread_cond;
 	pthread_mutex_t  write_bitstream_my_mutex;
 	pthread_mutex_t  *write_bitstream_next_mutex;
@@ -127,17 +126,6 @@ int encoder_thread_init(void)
 	int i,ret;
 
 	for(i=0;i<MAX_THREAD_NUMBER;i++) {
-		ret = pthread_mutex_init(&params[i].my_thread_mutex,NULL);
-		if (ret != 0) {
-			printf("%d\n", __LINE__);
-			return -1;
-		}
-
-		ret = pthread_mutex_lock(&params[i].my_thread_mutex);
-		if (ret != 0) {
-			printf("%d\n", __LINE__);
-			return -1;
-		}
 		ret = pthread_mutex_init(&params[i].write_bitstream_my_mutex,NULL);
 		if (ret != 0) {
 			printf("%d\n", __LINE__);

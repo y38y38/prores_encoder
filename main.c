@@ -376,6 +376,8 @@ int main(int argc, char **argv)
         //printf("end frame\n");
         //printf(".");
     }
+    //thread_end();
+
     fclose(input);
     fclose(output);
 
