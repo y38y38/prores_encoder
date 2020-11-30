@@ -72,6 +72,8 @@ void getC(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_
 
 uint16_t slice_size_table[MAX_SLICE_NUM];
 
+uint8_t slice_bitstream[MAX_THREAD_NUM];
+
 void encode_slices(struct encoder_param * param)
 {
     uint32_t mb_x;
@@ -79,6 +81,7 @@ void encode_slices(struct encoder_param * param)
     uint32_t mb_x_max;
     mb_x_max = (param->horizontal+ 15 ) >> 4;
     uint32_t slice_num_max;
+	uint32_t thread_num;
 
 
     slice_num_max = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
@@ -98,6 +101,7 @@ void encode_slices(struct encoder_param * param)
     slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
+	thread_num = 0;
     for (i = 0; i < slice_num_max ; i++) {
 
         while ((mb_x_max - mb_x) < slice_mb_count)
@@ -117,6 +121,7 @@ void encode_slices(struct encoder_param * param)
 #endif
 
        struct Slice slice_param;
+	   slice_param.thread_num = thread_num;
        slice_param.luma_matrix = param->luma_matrix;
        slice_param.chroma_matrix = param->chroma_matrix;
        slice_param.qscale = param->qscale_table[i];
@@ -150,6 +155,10 @@ void encode_slices(struct encoder_param * param)
             mb_x = 0;
             mb_y++;
         }
+		thread_num++;
+		if (MAX_THREAD_NUM == thread_num) {
+			thread_num = 0;
+		}
 		
     }
 

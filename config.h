@@ -8,4 +8,6 @@
 #define DEL_DIVISION
 #define DEL_MULTIPLY
 
+#define MAX_THREAD_NUM	(1024)
+
 #endif
