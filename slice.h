@@ -14,6 +14,7 @@
 #include "encoder.h"
 
 struct Slice {
+	uint32_t thread_num;
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;
     uint8_t qscale;
