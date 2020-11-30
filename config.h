@@ -8,6 +8,12 @@
 #define DEL_DIVISION
 #define DEL_MULTIPLY
 
-#define MAX_THREAD_NUM	(1024)
+
+#define MAX_THREAD_NUM	(1)
+#define MAX_THREAD_NUMBER	(1)
+
+#define MAX_SEQ_NUMBER 	(100)
+
+#define MAX_PRINT_NUM	(10)
 
 #endif

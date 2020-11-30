@@ -7,10 +7,10 @@
 all:encoder
 
 
-CFLAGS= -O3 -g -I./ -Wall
+CFLAGS= -g -I./ -Wall
 
 encoder:frame.o   dct.o main.o bitstream.o slice.o
-	gcc -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  slice.o -lm
+	gcc -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  slice.o -lm -lpthread
 
 frame.o:frame.c
 	gcc ${CFLAGS} -c frame.c -lm
