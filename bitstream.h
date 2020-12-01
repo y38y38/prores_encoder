@@ -20,6 +20,14 @@
 #define  SET_DATA16(x)  ((x & 0x00ff) <<  8 | \
                          (x & 0xff00) >>  8 )
 
+struct bitstream {
+	uint8_t *tmp_buf;
+	uint32_t tmp_buf_byte_offset;
+	uint32_t tmp_buf_bit_offset;
+	uint8_t *bitstream_buffer;
+};
+
+
 extern void initBitStream(void);
 extern void setBit(uint32_t buf, uint32_t size_of_bit);
 extern void setByteInOffset(uint32_t offset, uint8_t *buf, uint32_t size_of_byte);
