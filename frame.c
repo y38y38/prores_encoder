@@ -90,6 +90,11 @@ struct Slice slice_param[MAX_SLICE_NUM];
 
 int thread_fd[MAX_THREAD_NUM];
 
+pthread_mutex_t slice_num_thread_mutex[MAX_THREAD_NUM];
+pthread_cond_t slice_num_thread_cond[MAX_THREAD_NUM];
+int slice_num_thread[MAX_THREAD_NUM];
+
+
 uint32_t slice_num_max;
 void encode_slices(struct encoder_param * param)
 {
@@ -191,6 +196,19 @@ void encode_slices(struct encoder_param * param)
 //	thread_end();
 //	printf("thread end\n");
 //       slice_size_table[i] = size;
+		int j;
+		for(j=0;j<MAX_THREAD_NUM;j++) {
+			pthread_mutex_lock(&slice_num_thread_mutex[j]);
+			if ((slice_num_max % MAX_THREAD_NUM) > j) {
+				slice_num_thread[j] = (slice_num_max / MAX_THREAD_NUM) + 1;
+			} else {
+				slice_num_thread[j] = (slice_num_max / MAX_THREAD_NUM);
+			}
+//			printf("m slice_num_thread %d %d\n", j, slice_num_thread[j]);
+			pthread_cond_signal(&slice_num_thread_cond[j]);
+			pthread_mutex_unlock(&slice_num_thread_mutex[j]);
+
+		}
 
 	printf("start_write_bitstream\n");
 	start_write_bitstream();
@@ -404,9 +422,6 @@ void start_write_next_bitstream(struct thread_param * param)
 	return;
 }
 
-//pthread_mutex_t start_frame_mutex;
-//pthread_cond_t start_frame_cond;
-//int start_frame = 0;
 
 pthread_mutex_t end_frame_mutex;
 
@@ -415,26 +430,40 @@ void *thread_start_routin(void *arg)
 {
 	struct thread_param *param =  (struct thread_param*)arg;
 
+#if 0
 	char fifoname[1024];
 	sprintf(fifoname, "/tmp/fifo%d", param->thread_no);	
 	mkfifo(fifoname, 0666);
 	int fd = open(fifoname, O_RDONLY);
+	fcntl(fd, F_SETPIPE_SZ, (20971520/ MAX_THREAD_NUM));
+#endif
 
+	int counter = 0;
 	for(;;) {
-		struct Slice *slice;
+//		struct Slice *slice;
+#if 0
 		read(fd, &slice, sizeof(slice));
+#endif
+		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
+		while(slice_num_thread[param->thread_no] == 0) {
+			counter = 0;
+			pthread_cond_wait(&slice_num_thread_cond[param->thread_no], &slice_num_thread_mutex[param->thread_no]);
+		}
+		printf("s slice_num_thread %d %d\n", param->thread_no, slice_num_thread[param->thread_no]);
 
+		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
 		//start frame encode
-		int counter = 0;
 //		int seq = (counter * MAX_THREAD_NUM) + param->thread_no;
 
 //		printf("seq %d\n", seq);
-		encode_slice(slice);
+		int index = (counter * MAX_THREAD_NUM) + param->thread_no;
+
+		encode_slice(&slice_param[index]);
 
 		printf("wait_write_bitstream\n");
 		wait_write_bitstream(param);
 		printf("write_bitstream\n");
-		if (slice->end == true) {
+		if (slice_param[index].end == true) {
 			printf("end of frame\n");
 			pthread_mutex_unlock(&end_frame_mutex);
 		} else {
@@ -442,6 +471,10 @@ void *thread_start_routin(void *arg)
 		}
 
 		counter++;
+		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
+		slice_num_thread[param->thread_no]--;
+		printf("e slice_num_thread %d %d\n", param->thread_no, slice_num_thread[param->thread_no]);
+		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
 
 	}
 	
@@ -489,6 +522,21 @@ int encoder_thread_init(void)
 	}
 //	printf("%d\n", __LINE__);
 
+	for(i=0;i<MAX_THREAD_NUM;i++) {
+		ret = pthread_mutex_init(&slice_num_thread_mutex[i],NULL);
+		if (ret != 0) {
+			printf("%d\n", __LINE__);
+			return -1;
+		}
+		ret = pthread_cond_init(&slice_num_thread_cond[i],NULL);
+		if (ret != 0) {
+			printf("%d\n", __LINE__);
+			return -1;
+		}
+		slice_num_thread[i] = 0;
+	}
+
+
 	pthread_attr_t attr;
 	ret = pthread_attr_init(&attr);
 	if (ret != 0) {
@@ -508,6 +556,7 @@ int encoder_thread_init(void)
 		params[i].thread_no = i;
 	}
 
+#if 0
 	for(i=0;i<MAX_THREAD_NUM;i++) {
 		char fifoname[1024];
 		sprintf(fifoname, "/tmp/fifo%d", i);	
@@ -515,6 +564,7 @@ int encoder_thread_init(void)
 		thread_fd[i] = open(fifoname, O_WRONLY);
 		fcntl(thread_fd[i], F_SETPIPE_SZ, (20971520/ MAX_THREAD_NUM));
 	}
+#endif
 	frame_end_mutex_init();
 
 	return 0;
