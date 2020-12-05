@@ -648,6 +648,8 @@ void write_slice_size(int slice_no, int size);
 
 uint32_t encode_slice(struct Slice *param)
 {
+	initBitStream(param->bitstream);
+	
     uint32_t start_offset= getBitSize(&write_bitstream);
 
     uint8_t slice_header_size = 6;
