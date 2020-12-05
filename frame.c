@@ -86,7 +86,9 @@ void frame_end_wait(void);
 
 uint16_t slice_size_table[MAX_SLICE_NUM];
 
-uint8_t slice_bitstream[MAX_THREAD_NUM];
+struct bitstream slice_bitstream[MAX_THREAD_NUM];
+uint8_t slice_bistream_buffer[MAX_SLICE_BITSTREAM_SIZE];
+
 
 struct Slice slice_param[MAX_SLICE_NUM];
 //extern void thread_start(void);
@@ -122,7 +124,7 @@ void encode_slices(struct encoder_param * param)
         uint16_t slice_size = 0x0;
         setByte(&write_bitstream, (uint8_t*)&slice_size, 2);
     }
-//	printf("s4\n");
+	//printf("s4\n");
     slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
     mb_y = 0;
@@ -168,6 +170,8 @@ void encode_slices(struct encoder_param * param)
        slice_param[i].mb_y = mb_y;
 #endif
        slice_param[i].format_444 = param->format_444;
+	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
+	   slice_param[i].bitstream->bitstream_buffer = &slice_bistream_buffer[i%MAX_THREAD_NUM];
 
 	   if (i == (slice_num_max -1)) {
 			slice_param[i].end = 1;
