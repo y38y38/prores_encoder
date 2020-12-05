@@ -20,6 +20,18 @@
 #define  SET_DATA16(x)  ((x & 0x00ff) <<  8 | \
                          (x & 0xff00) >>  8 )
 
+
+#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024) //1K
+
+
+struct bitstream_slice {
+	uint8_t *tmp_buf;
+	uint32_t tmp_buf_byte_offset;
+	uint32_t tmp_buf_bit_offset;
+	uint8_t bitstream_buffer[MAX_SLICE_BITSTREAM_SIZE];
+};
+
+
 struct bitstream {
 	uint8_t *tmp_buf;
 	uint32_t tmp_buf_byte_offset;
@@ -28,13 +40,13 @@ struct bitstream {
 };
 
 
-extern void initBitStream(void);
-extern void setBit(uint32_t buf, uint32_t size_of_bit);
-extern void setByteInOffset(uint32_t offset, uint8_t *buf, uint32_t size_of_byte);
+extern void initBitStream(struct bitstream *write_bitstream);
+extern void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit);
+extern void setByteInOffset(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte);
 
-extern void setByte(uint8_t *buf, uint32_t size_of_byte);
+extern void setByte(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_byte);
 
-extern uint32_t getBitSize(void);
+extern uint32_t getBitSize(struct bitstream *write_bitstream);
 
-extern uint8_t *getBitStream(uint32_t *size);
+extern uint8_t *getBitStream(struct bitstream *write_bitstream, uint32_t *size);
 #endif
