@@ -100,6 +100,8 @@ pthread_mutex_t slice_num_thread_mutex[MAX_THREAD_NUM];
 pthread_cond_t slice_num_thread_cond[MAX_THREAD_NUM];
 int slice_num_thread[MAX_THREAD_NUM];
 
+struct thread_param params[MAX_THREAD_NUM];
+
 
 uint32_t slice_num_max;
 void encode_slices(struct encoder_param * param)
@@ -173,7 +175,7 @@ void encode_slices(struct encoder_param * param)
 	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
 	   slice_param[i].bitstream->bitstream_buffer = &slice_bistream_buffer[i%MAX_THREAD_NUM];
 	   slice_param[i].real_bitsteam = &write_bitstream;
-
+		slice_param[i].thread_param = &params[i%MAX_THREAD_NUM];
 	   if (i == (slice_num_max -1)) {
 			slice_param[i].end = 1;
 		} else {
@@ -399,7 +401,7 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
     setByteInOffset(&write_bitstream, frame_size_offset, (uint8_t*)&frame_size_data , 4);
     return ptr;
 }
-
+#if 0
 struct thread_param {
 	int seq;
 	int thread_no;
@@ -407,7 +409,7 @@ struct thread_param {
 	pthread_mutex_t  write_bitstream_my_mutex;
 	pthread_mutex_t  *write_bitstream_next_mutex;
 };
-
+#endif
 
 
 void wait_write_bitstream(struct thread_param * param)
@@ -471,6 +473,7 @@ void *thread_start_routin(void *arg)
 
 		encode_slice(&slice_param[index]);
 
+#if 0
 		//printf("wait_write_bitstream\n");
 		wait_write_bitstream(param);
 		//printf("write_bitstream\n");
@@ -480,7 +483,7 @@ void *thread_start_routin(void *arg)
 		} else {
 			start_write_next_bitstream(param);
 		}
-
+#endif
 		counter++;
 		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
 		slice_num_thread[param->thread_no]--;
@@ -493,7 +496,6 @@ void *thread_start_routin(void *arg)
 
 pthread_t thread[MAX_THREAD_NUM];
 
-struct thread_param params[MAX_THREAD_NUM];
 
 
 void frame_end_mutex_init(void) {
