@@ -172,6 +172,7 @@ void encode_slices(struct encoder_param * param)
        slice_param[i].format_444 = param->format_444;
 	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
 	   slice_param[i].bitstream->bitstream_buffer = &slice_bistream_buffer[i%MAX_THREAD_NUM];
+	   slice_param[i].real_bitsteam = &write_bitstream;
 
 	   if (i == (slice_num_max -1)) {
 			slice_param[i].end = 1;

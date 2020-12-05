@@ -30,6 +30,7 @@ struct Slice {
     bool format_444;
 	bool end;
 	struct bitstream *bitstream;
+	struct bitstream *real_bitsteam;
 };
 extern const uint8_t block_pattern_scan_table[64];
 extern uint8_t block_pattern_scan_read_order_table[64];

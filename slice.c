@@ -20,7 +20,7 @@
 #include "encoder.h"
 #include "slice.h"
 
-extern struct bitstream write_bitstream;
+//extern struct bitstream write_bitstream;
 
 
 void aprint_block(int16_t *block)
@@ -93,7 +93,7 @@ int32_t GetAbs(int32_t val)
     }
 }
 
-void golomb_rice_code(int32_t k, uint32_t val)
+void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
     int32_t q  = val >> k;
 
@@ -101,22 +101,22 @@ void golomb_rice_code(int32_t k, uint32_t val)
         //uint32_t tmp = pow(2,k);
         //uint32_t r = val % tmp;
         if (q != 0) {
-            setBit(&write_bitstream, 0,q);
+            setBit(bitstream, 0,q);
             //printf("1: 0 %d\n", q);
         }
-        setBit(&write_bitstream, 1,1);
+        setBit(bitstream, 1,1);
         //printf("1: 1 1    k:%d q:%d r:%d\n", k, q, r);
     } else {
         uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
         uint32_t r = val & (tmp -1 );
 
         uint32_t codeword = (1 << k) | r;
-        setBit(&write_bitstream, codeword, q + 1 + k );
+        setBit(bitstream, codeword, q + 1 + k );
         //printf("2: %x %d\n",codeword, q+1+k);
     }
     return;
 }
-void exp_golomb_code(int32_t k, uint32_t val)
+void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
 
 	//LOG
@@ -126,71 +126,71 @@ void exp_golomb_code(int32_t k, uint32_t val)
 
     int32_t codeword_length = (2 * q) + k + 1;
 
-    setBit(&write_bitstream, sum, codeword_length);
+    setBit(bitstream, sum, codeword_length);
     //printf("3: val:%x q:%d k:%d bits:%d k:%d\n", sum,q, k, codeword_length,k );
     return;
 }
-void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val)
+void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream)
 {
     uint32_t value = (last_rice_q + 1) << k_rice;
 
     if (val < value) {
-        golomb_rice_code(k_rice, val);
+        golomb_rice_code(k_rice, val, bitstream);
     } else {
-        setBit(&write_bitstream, 0,last_rice_q + 1);
+        setBit(bitstream, 0,last_rice_q + 1);
         //printf("0: val:0 bits:%d\n", last_rice_q + 1);
-        exp_golomb_code(k_exp, val - value);
+        exp_golomb_code(k_exp, val - value, bitstream);
     }
     return;
 }
-void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff , int val)
+void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff , int val, struct bitstream *bitstream)
 {
     if (first) {
-        exp_golomb_code(5, val);
+        exp_golomb_code(5, val, bitstream);
     } else if (abs_previousDCDiff == 0) {
-        exp_golomb_code(0, val);
+        exp_golomb_code(0, val, bitstream);
     } else if (abs_previousDCDiff == 1) {
-        exp_golomb_code(1, val);
+        exp_golomb_code(1, val, bitstream);
     } else if (abs_previousDCDiff == 2) {
-        rice_exp_combo_code(1,2,3, val);
+        rice_exp_combo_code(1,2,3, val, bitstream);
     } else {
-        exp_golomb_code(3, val);
+        exp_golomb_code(3, val, bitstream);
     }
     return;
 
 }
-void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val)
+void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct bitstream *bitstream)
 {
     if ((previousRun== 0)||(previousRun== 1)) {
-        rice_exp_combo_code(2,0,1, val);
+        rice_exp_combo_code(2,0,1, val,bitstream);
     } else if ((previousRun== 2)||(previousRun== 3)) {
-        rice_exp_combo_code(1,0,1, val);
+        rice_exp_combo_code(1,0,1, val, bitstream);
     } else if (previousRun== 4) {
-        exp_golomb_code(0, val);
+        exp_golomb_code(0, val, bitstream);
     } else if ((previousRun>= 5) && (previousRun <= 8))  {
-        rice_exp_combo_code(1,1,2, val);
+        rice_exp_combo_code(1,1,2, val,bitstream);
     } else if ((previousRun>= 9) && (previousRun <= 14))  {
-        exp_golomb_code(1, val);
+        exp_golomb_code(1, val,bitstream);
     } else {
-        exp_golomb_code(2, val);
+        exp_golomb_code(2, val,bitstream);
     }
     return;
 
 }
-void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val)
+void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, struct bitstream *bitstream)
 {
     if (previousLevel== 0) {
-        rice_exp_combo_code(2,0,2, val);
+        rice_exp_combo_code(2,0,2, val, bitstream);
     } else if (previousLevel== 1) {
-        rice_exp_combo_code(1,0,1, val);
+        rice_exp_combo_code(1,0,1, val, bitstream);
     } else if (previousLevel== 2) {
-        rice_exp_combo_code(2,0,1, val);
+        rice_exp_combo_code(2,0,1, val, bitstream);
     } else if (previousLevel == 3)  {
-        exp_golomb_code(0, val);
+        exp_golomb_code(0, val, bitstream);
     } else if ((previousLevel>= 4) && (previousLevel<= 7))  {
-        exp_golomb_code(1, val);
+        exp_golomb_code(1, val, bitstream);
     } else {
-        exp_golomb_code(2, val);
+        exp_golomb_code(2, val, bitstream);
     }
     return;
 
@@ -207,7 +207,7 @@ int32_t Signedintegertosymbolmapping(int32_t val)
     }
     return sn;
 }
-void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks)
+void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
 {
     int32_t DcCoeff;
     int32_t val;
@@ -219,7 +219,7 @@ void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks)
 
     DcCoeff = (coefficients[0]) ;
     val = Signedintegertosymbolmapping(DcCoeff);
-    entropy_encode_dc_coefficient(true, 0, val);
+    entropy_encode_dc_coefficient(true, 0, val, bitstream);
 
     
     previousDCCoeff= DcCoeff;
@@ -233,7 +233,7 @@ void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks)
         }
         val = Signedintegertosymbolmapping(dc_coeff_difference);
         abs_previousDCDiff = GetAbs(previousDCDiff );
-        entropy_encode_dc_coefficient(false, abs_previousDCDiff, val);
+        entropy_encode_dc_coefficient(false, abs_previousDCDiff, val, bitstream);
         previousDCDiff = DcCoeff - previousDCCoeff;
         previousDCCoeff= DcCoeff;
 
@@ -256,7 +256,7 @@ uint8_t block_pattern_scan_read_order_table[64];
 
 
 #define MAX_COEFFICIENT_NUM_PER_BLOCK (64)
-uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
+uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
 {
     int32_t block;
     int32_t conefficient;
@@ -276,14 +276,14 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
             level = coefficients[(block * MAX_COEFFICIENT_NUM_PER_BLOCK) + position] ;
 
             if (level != 0) {
-                encode_vlc_codeword_ac_run(previousRun, run);
+                encode_vlc_codeword_ac_run(previousRun, run, bitstream);
 
                 abs_level_minus_1 = GetAbs(level) - 1;
-                encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1);
+                encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream);
                 if (level >=0) {
-                    setBit(&write_bitstream, 0,1);
+                    setBit(bitstream, 0,1);
                 } else {
-                    setBit(&write_bitstream, 1,1);
+                    setBit(bitstream, 1,1);
                 }
 
                 previousRun = run;
@@ -514,11 +514,11 @@ int16_t y_slice[MAX_SLICE_DATA];
 int16_t cb_slice[MAX_SLICE_DATA];
 int16_t cr_slice[MAX_SLICE_DATA];
 
-uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
+uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream * bitstream)
 {
     //print_slice(y_data, 8);
     //printf("%s start\n", __FUNCTION__);
-    uint32_t start_offset= getBitSize(&write_bitstream);
+    uint32_t start_offset= getBitSize(bitstream);
     //printf("start_offset %d\n", start_offset);
 
 //    getYDataToBlock((uint16_t*)y_slice, y_data,mb_x,mb_y,slice_size_in_mb);
@@ -557,23 +557,23 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     encode_qscale(y_slice, scale , slice_size_in_mb * MB_IN_BLOCK);
 
 
-    entropy_encode_dc_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK);
-    entropy_encode_ac_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK);
+    entropy_encode_dc_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK, bitstream);
+    entropy_encode_ac_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK, bitstream);
 
     //byte aliened
-    uint32_t size  = getBitSize(&write_bitstream);
+    uint32_t size  = getBitSize(bitstream);
     if (size & 7 )  {
-        setBit(&write_bitstream, 0x0, 8 - (size & 7));
+        setBit(bitstream, 0x0, 8 - (size & 7));
     }
-    uint32_t current_offset = getBitSize(&write_bitstream);
+    uint32_t current_offset = getBitSize(bitstream);
     //printf("current_offset %d\n",current_offset );
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
+uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream)
 {
     //printf("cb start\n");
-    uint32_t start_offset= getBitSize(&write_bitstream);
+    uint32_t start_offset= getBitSize(bitstream);
 
     //getCbDataToBlock((uint16_t*)cb_slice, cb_data,mb_x,mb_y,slice_size_in_mb);
 	getCver2((uint16_t*)cb_slice, cb_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
@@ -595,22 +595,22 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     encode_qt(cb_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
     encode_qscale(cb_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    entropy_encode_dc_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
-    entropy_encode_ac_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    entropy_encode_dc_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
+    entropy_encode_ac_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
 
     //byte aliened
-    uint32_t size  = getBitSize(&write_bitstream);
+    uint32_t size  = getBitSize(bitstream);
     if (size & 0x7 )  {
-        setBit(&write_bitstream, 0x0, 8 - (size % 8));
+        setBit(bitstream, 0x0, 8 - (size % 8));
     }
-    uint32_t current_offset = getBitSize(&write_bitstream);
+    uint32_t current_offset = getBitSize(bitstream);
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
+uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream)
 {
     //printf("%s start\n", __FUNCTION__);
-    uint32_t start_offset= getBitSize(&write_bitstream);
+    uint32_t start_offset= getBitSize(bitstream);
 
 //    getCbDataToBlock((uint16_t*)cr_slice, cr_data,mb_x,mb_y,slice_size_in_mb);
 	getCver2((uint16_t*)cr_slice, cr_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
@@ -629,14 +629,14 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     encode_qt(cr_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
     encode_qscale(cr_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    entropy_encode_dc_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
-    entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    entropy_encode_dc_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
+    entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
     //byte aliened
-    uint32_t size  = getBitSize(&write_bitstream);
+    uint32_t size  = getBitSize(bitstream);
     if (size & 7 )  {
-        setBit(&write_bitstream, 0x0, 8 - (size % 8));
+        setBit(bitstream, 0x0, 8 - (size % 8));
     }
-    uint32_t current_offset = getBitSize(&write_bitstream);
+    uint32_t current_offset = getBitSize(bitstream);
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
@@ -649,64 +649,65 @@ void write_slice_size(int slice_no, int size);
 uint32_t encode_slice(struct Slice *param)
 {
 	initBitStream(param->bitstream);
-	
-    uint32_t start_offset= getBitSize(&write_bitstream);
+
+    uint32_t start_offset= getBitSize(param->bitstream);
 
     uint8_t slice_header_size = 6;
 
-    setBit(&write_bitstream, slice_header_size , 5);
+    setBit(param->bitstream, slice_header_size , 5);
 
     uint8_t reserve =0x0;
-    setBit(&write_bitstream, reserve, 3);
+    setBit(param->bitstream, reserve, 3);
 
-    setByte(&write_bitstream, &param->qscale, 1);
+    setByte(param->bitstream, &param->qscale, 1);
 
-    uint32_t code_size_of_y_data_offset = getBitSize(&write_bitstream);
+    uint32_t code_size_of_y_data_offset = getBitSize(param->bitstream);
     code_size_of_y_data_offset = code_size_of_y_data_offset >> 3;
     uint16_t size = 0;
     uint16_t coded_size_of_y_data = SET_DATA16(size);
-    setByte(&write_bitstream, (uint8_t*)&coded_size_of_y_data , 2);
+    setByte(param->bitstream, (uint8_t*)&coded_size_of_y_data , 2);
 
-    uint32_t code_size_of_cb_data_offset = getBitSize(&write_bitstream);
+    uint32_t code_size_of_cb_data_offset = getBitSize(param->bitstream);
     code_size_of_cb_data_offset = code_size_of_cb_data_offset >> 3 ;
     size = 0;
     uint16_t coded_size_of_cb_data = SET_DATA16(size);
-    setByte(&write_bitstream, (uint8_t*)&coded_size_of_cb_data , 2);
+    setByte(param->bitstream, (uint8_t*)&coded_size_of_cb_data , 2);
 
 //	printf("s\n");
 
     //printf("%s start %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
 
-    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
+    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
     
     uint16_t cb_size;
     if (param->format_444 == true) {
-        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
+        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
         cb_size = SET_DATA16(size);
         //printf("cb %d\n", size);
         //exit(1);
-        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
+        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
     } else {
-        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
+        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
         cb_size = SET_DATA16(size);
         //printf("cb %d\n", size);
         //exit(1);
-        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
+        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
     }
 
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
-    setByteInOffset(&write_bitstream, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
+    setByteInOffset(param->bitstream, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
     //printf("%d %x\n",code_size_of_y_data_offset,code_size_of_y_data_offset); 
-    setByteInOffset(&write_bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
-    uint32_t current_offset = getBitSize(&write_bitstream);
+    setByteInOffset(param->bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
+    uint32_t current_offset = getBitSize(param->bitstream);
 
 	write_slice_size(param->slice_no, ((current_offset - start_offset)/8));
     //printf("%s end %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
 //	printf("e\n");
+	setByte(param->real_bitsteam, param->bitstream->bitstream_buffer, getBitSize(param->bitstream) / 8);
     return ((current_offset - start_offset)/8);
 }
 
