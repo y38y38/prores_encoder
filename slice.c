@@ -20,6 +20,8 @@
 #include "encoder.h"
 #include "slice.h"
 
+extern struct bitstream write_bitstream;
+
 
 void aprint_block(int16_t *block)
 {
@@ -99,17 +101,17 @@ void golomb_rice_code(int32_t k, uint32_t val)
         //uint32_t tmp = pow(2,k);
         //uint32_t r = val % tmp;
         if (q != 0) {
-            setBit(0,q);
+            setBit(&write_bitstream, 0,q);
             //printf("1: 0 %d\n", q);
         }
-        setBit(1,1);
+        setBit(&write_bitstream, 1,1);
         //printf("1: 1 1    k:%d q:%d r:%d\n", k, q, r);
     } else {
         uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
         uint32_t r = val & (tmp -1 );
 
         uint32_t codeword = (1 << k) | r;
-        setBit(codeword, q + 1 + k );
+        setBit(&write_bitstream, codeword, q + 1 + k );
         //printf("2: %x %d\n",codeword, q+1+k);
     }
     return;
@@ -124,7 +126,7 @@ void exp_golomb_code(int32_t k, uint32_t val)
 
     int32_t codeword_length = (2 * q) + k + 1;
 
-    setBit(sum, codeword_length);
+    setBit(&write_bitstream, sum, codeword_length);
     //printf("3: val:%x q:%d k:%d bits:%d k:%d\n", sum,q, k, codeword_length,k );
     return;
 }
@@ -135,7 +137,7 @@ void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uin
     if (val < value) {
         golomb_rice_code(k_rice, val);
     } else {
-        setBit(0,last_rice_q + 1);
+        setBit(&write_bitstream, 0,last_rice_q + 1);
         //printf("0: val:0 bits:%d\n", last_rice_q + 1);
         exp_golomb_code(k_exp, val - value);
     }
@@ -279,9 +281,9 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks)
                 abs_level_minus_1 = GetAbs(level) - 1;
                 encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1);
                 if (level >=0) {
-                    setBit(0,1);
+                    setBit(&write_bitstream, 0,1);
                 } else {
-                    setBit(1,1);
+                    setBit(&write_bitstream, 1,1);
                 }
 
                 previousRun = run;
@@ -516,7 +518,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 {
     //print_slice(y_data, 8);
     //printf("%s start\n", __FUNCTION__);
-    uint32_t start_offset= getBitSize();
+    uint32_t start_offset= getBitSize(&write_bitstream);
     //printf("start_offset %d\n", start_offset);
 
 //    getYDataToBlock((uint16_t*)y_slice, y_data,mb_x,mb_y,slice_size_in_mb);
@@ -559,11 +561,11 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
     entropy_encode_ac_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK);
 
     //byte aliened
-    uint32_t size  = getBitSize();
+    uint32_t size  = getBitSize(&write_bitstream);
     if (size & 7 )  {
-        setBit(0x0, 8 - (size & 7));
+        setBit(&write_bitstream, 0x0, 8 - (size & 7));
     }
-    uint32_t current_offset = getBitSize();
+    uint32_t current_offset = getBitSize(&write_bitstream);
     //printf("current_offset %d\n",current_offset );
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
@@ -571,7 +573,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
 {
     //printf("cb start\n");
-    uint32_t start_offset= getBitSize();
+    uint32_t start_offset= getBitSize(&write_bitstream);
 
     //getCbDataToBlock((uint16_t*)cb_slice, cb_data,mb_x,mb_y,slice_size_in_mb);
 	getCver2((uint16_t*)cb_slice, cb_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
@@ -597,18 +599,18 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     entropy_encode_ac_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
     //byte aliened
-    uint32_t size  = getBitSize();
+    uint32_t size  = getBitSize(&write_bitstream);
     if (size & 0x7 )  {
-        setBit(0x0, 8 - (size % 8));
+        setBit(&write_bitstream, 0x0, 8 - (size % 8));
     }
-    uint32_t current_offset = getBitSize();
+    uint32_t current_offset = getBitSize(&write_bitstream);
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
 uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical)
 {
     //printf("%s start\n", __FUNCTION__);
-    uint32_t start_offset= getBitSize();
+    uint32_t start_offset= getBitSize(&write_bitstream);
 
 //    getCbDataToBlock((uint16_t*)cr_slice, cr_data,mb_x,mb_y,slice_size_in_mb);
 	getCver2((uint16_t*)cr_slice, cr_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
@@ -630,11 +632,11 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     entropy_encode_dc_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
     entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
     //byte aliened
-    uint32_t size  = getBitSize();
+    uint32_t size  = getBitSize(&write_bitstream);
     if (size & 7 )  {
-        setBit(0x0, 8 - (size % 8));
+        setBit(&write_bitstream, 0x0, 8 - (size % 8));
     }
-    uint32_t current_offset = getBitSize();
+    uint32_t current_offset = getBitSize(&write_bitstream);
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
@@ -646,32 +648,32 @@ void write_slice_size(int slice_no, int size);
 
 uint32_t encode_slice(struct Slice *param)
 {
-    uint32_t start_offset= getBitSize();
+    uint32_t start_offset= getBitSize(&write_bitstream);
 
     uint8_t slice_header_size = 6;
 
-    setBit(slice_header_size , 5);
+    setBit(&write_bitstream, slice_header_size , 5);
 
     uint8_t reserve =0x0;
-    setBit(reserve, 3);
+    setBit(&write_bitstream, reserve, 3);
 
-    setByte(&param->qscale, 1);
+    setByte(&write_bitstream, &param->qscale, 1);
 
-    uint32_t code_size_of_y_data_offset = getBitSize();
+    uint32_t code_size_of_y_data_offset = getBitSize(&write_bitstream);
     code_size_of_y_data_offset = code_size_of_y_data_offset >> 3;
     uint16_t size = 0;
     uint16_t coded_size_of_y_data = SET_DATA16(size);
-    setByte((uint8_t*)&coded_size_of_y_data , 2);
+    setByte(&write_bitstream, (uint8_t*)&coded_size_of_y_data , 2);
 
-    uint32_t code_size_of_cb_data_offset = getBitSize();
+    uint32_t code_size_of_cb_data_offset = getBitSize(&write_bitstream);
     code_size_of_cb_data_offset = code_size_of_cb_data_offset >> 3 ;
     size = 0;
     uint16_t coded_size_of_cb_data = SET_DATA16(size);
-    setByte((uint8_t*)&coded_size_of_cb_data , 2);
+    setByte(&write_bitstream, (uint8_t*)&coded_size_of_cb_data , 2);
 
+//	printf("s\n");
 
-
-    printf("%s start %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
+    //printf("%s start %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
 
     size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical);
     //exit(1);
@@ -695,13 +697,14 @@ uint32_t encode_slice(struct Slice *param)
 
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
-    setByteInOffset(code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
+    setByteInOffset(&write_bitstream, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
     //printf("%d %x\n",code_size_of_y_data_offset,code_size_of_y_data_offset); 
-    setByteInOffset(code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
-    uint32_t current_offset = getBitSize();
+    setByteInOffset(&write_bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
+    uint32_t current_offset = getBitSize(&write_bitstream);
 
 	write_slice_size(param->slice_no, ((current_offset - start_offset)/8));
-    printf("%s end %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
+    //printf("%s end %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
+//	printf("e\n");
     return ((current_offset - start_offset)/8);
 }
 
