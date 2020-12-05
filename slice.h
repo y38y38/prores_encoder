@@ -13,6 +13,15 @@
 #include <stdbool.h>
 #include "encoder.h"
 
+struct thread_param {
+	int seq;
+	int thread_no;
+//	pthread_mutex_t  my_thread_mutex;
+	pthread_mutex_t  write_bitstream_my_mutex;
+	pthread_mutex_t  *write_bitstream_next_mutex;
+};
+
+
 struct Slice {
 	int slice_no;
 	uint32_t thread_num;
@@ -31,6 +40,7 @@ struct Slice {
 	bool end;
 	struct bitstream *bitstream;
 	struct bitstream *real_bitsteam;
+	struct thread_param *thread_param;
 };
 extern const uint8_t block_pattern_scan_table[64];
 extern uint8_t block_pattern_scan_read_order_table[64];
