@@ -37,6 +37,7 @@ void initBitStream(struct bitstream *write_bitstream)
 }
 void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
+	//printf("setBit %p\n", write_bitstream);
     if (size_of_bit >= 24 )  {
         printf("error %s %d %d\n", __FUNCTION__, __LINE__, size_of_bit);
         return;
@@ -69,6 +70,7 @@ void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bi
     write_bitstream->tmp_buf_byte_offset += (write_bitstream->tmp_buf_bit_offset + size_of_bit) >> 3;
     write_bitstream->tmp_buf_bit_offset = (write_bitstream->tmp_buf_bit_offset + size_of_bit) & 7;
 
+	//printf("offset %d %d\n", write_bitstream->tmp_buf_byte_offset, write_bitstream->tmp_buf_bit_offset);
 }
 
 void setByteInOffset(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte)
