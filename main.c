@@ -235,9 +235,9 @@ int32_t ComplmentVideoFrame(uint16_t *data, int32_t horizontal, int32_t vertical
 /*  2 →１６bit */
 #define MAX_DATA_SIZE ((MAX_HORIZONTAL * MAX_VERTICAL) * 2)
 
-uint8_t input_y_data[MAX_DATA_SIZE];
-uint8_t input_cb_data[MAX_DATA_SIZE];
-uint8_t input_cr_data[MAX_DATA_SIZE];
+static uint8_t input_y_data[MAX_DATA_SIZE];
+static uint8_t input_cb_data[MAX_DATA_SIZE];
+static uint8_t input_cr_data[MAX_DATA_SIZE];
 
 /*
  * ./encoder [-l luma_matrix_file] [-c  chroma_matrix_file] [-q qscale_file] [-h horizontal] [-v vertical] [-m slice_size_in_mb] -i input_file -o output_file
@@ -310,11 +310,6 @@ int main(int argc, char **argv)
             break;
         }
         if (format_444_ == true) {
-            //readsize = fread(cb_data, 1, size, input);
-            //readsize = fread(cb_data, 1, size/2, input);
-            //readsize = fread(cb_data, 1, 4147200, input);
-            //readsize = fread(cb_data, 1, 2073600, input);
-            //readsize = fread(cb_data, 1, 2073600, input);
             readsize = fread(cb_data, 1, size, input);
             if (readsize != (size)) {
                 printf("error %d %d %d %p\n", __LINE__, (int)readsize, size, cb_data);
@@ -362,21 +357,13 @@ int main(int argc, char **argv)
         uint32_t frame_size;
         uint8_t *frame = encode_frame(&param, &frame_size);
 
-        //printf("frame_size %d\n", frame_size);
         size_t writesize = fwrite(frame, 1, frame_size,  output);
         if (writesize != frame_size) {
             printf("%s %d %d\n", __FUNCTION__, __LINE__, (int)writesize);
             //printf("write %d %p %d %p \n", (int)writesize, raw_data, raw_size,output);
             return -1;
         }
-        /* limit one frame */
-        if (i==1) {
-          //break;
-        }
-        //printf("end frame\n");
-        //printf(".");
     }
-    //thread_end();
 
     fclose(input);
     fclose(output);
