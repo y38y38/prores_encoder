@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
+//#include <math.h>
 #include <stdbool.h>
 #include <pthread.h>
 
@@ -273,7 +273,7 @@ void encode_slices(struct encoder_param * param)
        slice_param[i].format_444 = param->format_444;
 	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
 	   slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[i%MAX_THREAD_NUM];
-	   slice_param[i].real_bitsteam = &write_bitstream;
+//	   slice_param[i].real_bitsteam = &write_bitstream;
 		slice_param[i].thread_param = &params[i%MAX_THREAD_NUM];
 	   if (i == (slice_num_max -1)) {
 			slice_param[i].end = 1;
@@ -389,6 +389,17 @@ void *thread_start_routin(void *arg)
 		int index = (counter * MAX_THREAD_NUM) + param->thread_no;
 
 		encode_slice(&slice_param[index]);
+
+#if 1
+		wait_write_bitstream(param);
+		setByte(&write_bitstream, slice_param[index].bitstream->bitstream_buffer, getBitSize(slice_param[index].bitstream)/8);
+		if (slice_param[index].end == true) {
+
+			pthread_mutex_unlock(&end_frame_mutex);
+		} else {
+			start_write_next_bitstream(param);
+		}
+#endif
 
 		counter++;
 		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);

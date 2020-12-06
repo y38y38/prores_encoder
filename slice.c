@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <pthread.h>
+//#include <pthread.h>
 
 #include "dct.h"
 #include "bitstream.h"
@@ -34,9 +34,9 @@
 void write_slice_size(int slice_no, int size);
 
 
-pthread_mutex_t end_frame_mutex;
-void start_write_next_bitstream(struct thread_param * param);
-void wait_write_bitstream(struct thread_param * param);
+//pthread_mutex_t end_frame_mutex;
+//void start_write_next_bitstream(struct thread_param * param);
+//void wait_write_bitstream(struct thread_param * param);
 
 
 void aprint_block(int16_t *block)
@@ -323,7 +323,7 @@ static uint8_t qScale2quantization_index(uint8_t qscale)
 }
 #endif
 
-uint32_t encode_slice(struct Slice *param)
+void encode_slice(struct Slice *param)
 {
 	initBitStream(param->bitstream);
 
@@ -369,19 +369,6 @@ uint32_t encode_slice(struct Slice *param)
     uint32_t current_offset = getBitSize(param->bitstream);
 
 	write_slice_size(param->slice_no, ((current_offset - start_offset)/8));
-	wait_write_bitstream(param->thread_param);
-
-
-
-
-	setByte(param->real_bitsteam, param->bitstream->bitstream_buffer, getBitSize(param->bitstream) / 8);
-	if (param->end == true) {
-		//printf("end of frame\n");
-		pthread_mutex_unlock(&end_frame_mutex);
-	} else {
-		start_write_next_bitstream(param->thread_param);
-	}
-
-    return ((current_offset - start_offset)/8);
+    return;
 }
 

@@ -8,13 +8,14 @@
  **/
 #include <stdio.h>
 #include <stdint.h>
-#include <string.h>
+//#include <string.h>
 #include <math.h>
 
 #include "config.h"
+#include "prores.h"
+#include "dct.h"
 
-#define MAX_X   (8)
-#define MAX_Y   (8)
+
 
 static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
 

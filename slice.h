@@ -47,11 +47,10 @@ struct Slice {
     bool format_444;
 	bool end;
 	struct bitstream *bitstream;
-	struct bitstream *real_bitsteam;
 	struct thread_param *thread_param;
 };
 
-uint32_t encode_slice(struct Slice *param);
+void encode_slice(struct Slice *param);
 
 uint8_t luma_matrix_[MATRIX_NUM];
 uint8_t chroma_matrix_[MATRIX_NUM];
