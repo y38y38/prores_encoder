@@ -20,10 +20,6 @@
 
 
 
-//static uint8_t *tmp_buf = NULL;
-//static uint32_t tmp_buf_byte_offset = 0;
-//static uint32_t tmp_buf_bit_offset = 0;
-
 
 void initBitStream(struct bitstream *write_bitstream)
 {
@@ -37,12 +33,10 @@ void initBitStream(struct bitstream *write_bitstream)
 }
 void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
-	//printf("setBit %p\n", write_bitstream);
     if (size_of_bit >= 24 )  {
         printf("error %s %d %d\n", __FUNCTION__, __LINE__, size_of_bit);
         return;
     }
-    //printf("offset %x %d %x %d\n",tmp_buf_byte_offset,tmp_buf_bit_offset, buf, size_of_bit);
     
     uint32_t tmp = buf;
     uint32_t a = write_bitstream->tmp_buf_bit_offset + size_of_bit;
@@ -93,6 +87,7 @@ void setByte(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_b
     memcpy(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset , buf, size_of_byte);
     write_bitstream->tmp_buf_byte_offset +=size_of_byte;
 }
+
 uint32_t getBitSize(struct bitstream *write_bitstream)
 {
     return ((write_bitstream->tmp_buf_byte_offset * 8) + write_bitstream->tmp_buf_bit_offset );

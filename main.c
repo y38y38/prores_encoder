@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "prores.h"
 #include "encoder.h"
 
 uint8_t luma_matrix2_[MATRIX_NUM];

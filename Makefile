@@ -9,8 +9,8 @@ all:encoder
 
 CFLAGS= -g -I./ -Wall
 
-encoder:frame.o   dct.o main.o bitstream.o slice.o
-	gcc -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  slice.o -lm -lpthread
+encoder:frame.o   dct.o main.o bitstream.o slice.o vlc.o
+	gcc -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  vlc.o slice.o -lm -lpthread
 
 frame.o:frame.c
 	gcc ${CFLAGS} -c frame.c -lm
@@ -21,6 +21,9 @@ dct.o:dct.c
 
 bitstream.o:bitstream.c
 	gcc ${CFLAGS} -c bitstream.c
+
+vlc.o:vlc.c
+	gcc ${CFLAGS} -c vlc.c
 
 slice.o:slice.c
 	gcc ${CFLAGS} -c slice.c

@@ -11,15 +11,16 @@
 #define __SLICE_H__
 #include <stdint.h>
 #include <stdbool.h>
+#include <pthread.h>
+
+#include "prores.h"
 #include "encoder.h"
 
 
 #define MAX_SLICE_DATA	(2048)
 
 struct thread_param {
-//	int seq;
 	int thread_no;
-//	pthread_mutex_t  my_thread_mutex;
 	pthread_mutex_t  write_bitstream_my_mutex;
 	pthread_mutex_t  *write_bitstream_next_mutex;
 	int16_t y_slice[MAX_SLICE_DATA];
@@ -49,11 +50,9 @@ struct Slice {
 	struct bitstream *real_bitsteam;
 	struct thread_param *thread_param;
 };
-extern const uint8_t block_pattern_scan_table[64];
-extern uint8_t block_pattern_scan_read_order_table[64];
 
-extern uint32_t encode_slice(struct Slice *param);
+uint32_t encode_slice(struct Slice *param);
 
-extern uint8_t luma_matrix_[MATRIX_NUM];
-extern uint8_t chroma_matrix_[MATRIX_NUM];
+uint8_t luma_matrix_[MATRIX_NUM];
+uint8_t chroma_matrix_[MATRIX_NUM];
 #endif
