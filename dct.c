@@ -16,21 +16,7 @@
 #define MAX_X   (8)
 #define MAX_Y   (8)
 
-double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
-void dct_init(void)
-{
-    int h,v,x,y;
-    for (v=0;v<MAX_Y;v++) {
-        for (h=0;h<MAX_X;h++) {
-		    for(y=0;y<MAX_Y;y++) {
-        		for(x=0;x<MAX_X;x++) {
-            		kc_value[x][y][h][v] = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
-				}
-			}
-        }
-    }
-    return;
-}
+static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
 
 void print_block(int16_t *block)
 {
@@ -105,4 +91,19 @@ int dct_block(int16_t *block) {
     }
 
     return 0;
+}
+
+void dct_init(void)
+{
+    int h,v,x,y;
+    for (v=0;v<MAX_Y;v++) {
+        for (h=0;h<MAX_X;h++) {
+		    for(y=0;y<MAX_Y;y++) {
+        		for(x=0;x<MAX_X;x++) {
+            		kc_value[x][y][h][v] = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
+				}
+			}
+        }
+    }
+    return;
 }

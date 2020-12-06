@@ -24,6 +24,7 @@
 #include "config.h"
 #include "dct.h"
 #include "bitstream.h"
+#include "vlc.h"
 #include "slice.h"
 #include "encoder.h"
 
@@ -466,15 +467,7 @@ int encoder_thread_init(void)
 
 void encoder_init(void)
 {
-    int32_t i,j;
-    for(i=0;i<MATRIX_NUM ;i++) {
-        for(j=0;j<MATRIX_NUM ;j++) {
-            if (i == block_pattern_scan_table[j]  ) {
-                block_pattern_scan_read_order_table[i] = j;
-                break;
-            }
-        }
-    }
+	vlc_init();
 #ifdef PRE_CALC_COS
 	dct_init();
 #endif

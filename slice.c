@@ -11,15 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 #include <stdbool.h>
 #include <pthread.h>
 
-
-
-#include "config.h"
 #include "dct.h"
 #include "bitstream.h"
+#include "vlc.h"
 #include "slice.h"
 #include "encoder.h"
 
@@ -34,12 +31,12 @@
 #define BLOCK_VERTIVAL_IN_PIXEL       (8)
 
 
-extern void write_slice_size(int slice_no, int size);
+void write_slice_size(int slice_no, int size);
 
 
-extern pthread_mutex_t end_frame_mutex;
-extern void start_write_next_bitstream(struct thread_param * param);
-extern void wait_write_bitstream(struct thread_param * param);
+pthread_mutex_t end_frame_mutex;
+void start_write_next_bitstream(struct thread_param * param);
+void wait_write_bitstream(struct thread_param * param);
 
 
 void aprint_block(int16_t *block)
@@ -101,217 +98,8 @@ void print_pixels(int16_t *slice, int32_t mb_num)
 }
 
 
-int32_t GetAbs(int32_t val)
-{
-    if (val < 0) {
-        //printf("m\n");
-        return val * -1;
-    } else {
-        //printf("p\n");
-        return val;
-    }
-}
 
-void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream)
-{
-    int32_t q  = val >> k;
-
-    if (k ==0) {
-        if (q != 0) {
-            setBit(bitstream, 0,q);
-        }
-        setBit(bitstream, 1,1);
-    } else {
-        uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
-        uint32_t r = val & (tmp -1 );
-
-        uint32_t codeword = (1 << k) | r;
-        setBit(bitstream, codeword, q + 1 + k );
-    }
-    return;
-}
-void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream)
-{
-
-	//LOG
-    int32_t q = floor(log2(val + ((k==0) ? 1 : (2<<(k-1))))) - k;
-
-    uint32_t sum = val + ((k==0) ? 1 : (2<<(k-1)));
-
-    int32_t codeword_length = (2 * q) + k + 1;
-
-    setBit(bitstream, sum, codeword_length);
-    return;
-}
-void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream)
-{
-    uint32_t value = (last_rice_q + 1) << k_rice;
-
-    if (val < value) {
-        golomb_rice_code(k_rice, val, bitstream);
-    } else {
-        setBit(bitstream, 0,last_rice_q + 1);
-        exp_golomb_code(k_exp, val - value, bitstream);
-    }
-    return;
-}
-void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff , int val, struct bitstream *bitstream)
-{
-    if (first) {
-        exp_golomb_code(5, val, bitstream);
-    } else if (abs_previousDCDiff == 0) {
-        exp_golomb_code(0, val, bitstream);
-    } else if (abs_previousDCDiff == 1) {
-        exp_golomb_code(1, val, bitstream);
-    } else if (abs_previousDCDiff == 2) {
-        rice_exp_combo_code(1,2,3, val, bitstream);
-    } else {
-        exp_golomb_code(3, val, bitstream);
-    }
-    return;
-
-}
-void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct bitstream *bitstream)
-{
-    if ((previousRun== 0)||(previousRun== 1)) {
-        rice_exp_combo_code(2,0,1, val,bitstream);
-    } else if ((previousRun== 2)||(previousRun== 3)) {
-        rice_exp_combo_code(1,0,1, val, bitstream);
-    } else if (previousRun== 4) {
-        exp_golomb_code(0, val, bitstream);
-    } else if ((previousRun>= 5) && (previousRun <= 8))  {
-        rice_exp_combo_code(1,1,2, val,bitstream);
-    } else if ((previousRun>= 9) && (previousRun <= 14))  {
-        exp_golomb_code(1, val,bitstream);
-    } else {
-        exp_golomb_code(2, val,bitstream);
-    }
-    return;
-
-}
-void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, struct bitstream *bitstream)
-{
-    if (previousLevel== 0) {
-        rice_exp_combo_code(2,0,2, val, bitstream);
-    } else if (previousLevel== 1) {
-        rice_exp_combo_code(1,0,1, val, bitstream);
-    } else if (previousLevel== 2) {
-        rice_exp_combo_code(2,0,1, val, bitstream);
-    } else if (previousLevel == 3)  {
-        exp_golomb_code(0, val, bitstream);
-    } else if ((previousLevel>= 4) && (previousLevel<= 7))  {
-        exp_golomb_code(1, val, bitstream);
-    } else {
-        exp_golomb_code(2, val, bitstream);
-    }
-    return;
-
-}
-
-int32_t Signedintegertosymbolmapping(int32_t val)
-{
-    uint32_t sn;
-    if (val >=0 ) {
-        sn = 2 * GetAbs(val);
-
-    } else {
-        sn = 2 * GetAbs(val) - 1;
-    }
-    return sn;
-}
-void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
-{
-    int32_t DcCoeff;
-    int32_t val;
-    int32_t previousDCCoeff;
-    int32_t previousDCDiff;
-    int32_t n;
-    int32_t dc_coeff_difference;
-    int32_t abs_previousDCDiff;
-
-    DcCoeff = (coefficients[0]) ;
-    val = Signedintegertosymbolmapping(DcCoeff);
-    entropy_encode_dc_coefficient(true, 0, val, bitstream);
-
-    
-    previousDCCoeff= DcCoeff;
-    previousDCDiff = 3;
-    n = 1;
-    while( n <numBlocks) {
-        DcCoeff = (coefficients[n++ * 64]); 
-        dc_coeff_difference = DcCoeff - previousDCCoeff;
-        if (previousDCDiff < 0) {
-            dc_coeff_difference *= -1;
-        }
-        val = Signedintegertosymbolmapping(dc_coeff_difference);
-        abs_previousDCDiff = GetAbs(previousDCDiff );
-        entropy_encode_dc_coefficient(false, abs_previousDCDiff, val, bitstream);
-        previousDCDiff = DcCoeff - previousDCCoeff;
-        previousDCCoeff= DcCoeff;
-
-    }
-    return ;
-}
-
-//from figure 4
-const uint8_t block_pattern_scan_table[64] = {
-     0,  1,  4,  5, 16, 17, 21, 22,
-     2,  3,  6,  7, 18, 20, 23, 28,
-     8,  9, 12, 13, 19, 24, 27, 29,
-    10, 11, 14, 15, 25, 26, 30, 31,
-    32, 33, 37, 38, 45, 46, 53, 54,
-    34, 36, 39, 44, 47, 52, 55, 60,
-    35, 40, 43, 48, 51, 56, 59, 61,
-    41, 42, 49, 50, 57, 58, 62, 63,
-};
-uint8_t block_pattern_scan_read_order_table[64];
-
-
-#define MAX_COEFFICIENT_NUM_PER_BLOCK (64)
-uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
-{
-    int32_t block;
-    int32_t conefficient;
-    int32_t run;
-    int32_t level;
-    int32_t abs_level_minus_1;
-    int32_t previousRun = 4;
-    int32_t previousLevelSymbol = 1;
-    int32_t position;
-
-    run = 0;
-
-    //start is 1 because 0 equal dc position
-    for (conefficient = 1; conefficient< MAX_COEFFICIENT_NUM_PER_BLOCK; conefficient++) {
-        position = block_pattern_scan_read_order_table[conefficient];
-        for (block=0; block < numBlocks; block++) {
-            level = coefficients[(block * MAX_COEFFICIENT_NUM_PER_BLOCK) + position] ;
-
-            if (level != 0) {
-                encode_vlc_codeword_ac_run(previousRun, run, bitstream);
-
-                abs_level_minus_1 = GetAbs(level) - 1;
-                encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream);
-                if (level >=0) {
-                    setBit(bitstream, 0,1);
-                } else {
-                    setBit(bitstream, 1,1);
-                }
-
-                previousRun = run;
-                previousLevelSymbol = abs_level_minus_1;
-                run    = 0;
-
-            } else {
-                run++;
-            }
-        }
-    }
-    return 0;
-}
-
-
-void getYver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
+static void getYver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
 {
 	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
 	int i;
@@ -323,7 +111,7 @@ void getYver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t 
 	}
 }
 //get 1 slice data
-void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+static void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
 	int i;
     int32_t block;
@@ -350,7 +138,7 @@ void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t
 	return;
 }
 
-void getCver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
+static void getCver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
 {
 	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
 	int i;
@@ -362,7 +150,7 @@ void getCver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t 
 	}
 }
 //get 1 slice data
-void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+static void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
 	int i;
     int32_t block;
@@ -384,7 +172,7 @@ void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t
 }
 
 
-void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
+static void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 {
 
     int16_t *data;
@@ -397,7 +185,7 @@ void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 
     }
 }
-void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
+static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
 {
 
     int16_t *data;
@@ -410,7 +198,7 @@ void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
 
     }
 }
-void pre_quant(int16_t *block, int32_t  block_num)
+static void pre_quant(int16_t *block, int32_t  block_num)
 {
 
     int16_t *data;
@@ -423,7 +211,7 @@ void pre_quant(int16_t *block, int32_t  block_num)
 
     }
 }
-void pre_dct(int16_t *block, int32_t  block_num)
+static void pre_dct(int16_t *block, int32_t  block_num)
 {
 
     int16_t *data;
@@ -439,7 +227,7 @@ void pre_dct(int16_t *block, int32_t  block_num)
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 
-uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream * bitstream, struct thread_param *param)
+static uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream * bitstream, struct thread_param *param)
 {
     uint32_t start_offset= getBitSize(bitstream);
 
@@ -469,7 +257,7 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream, struct thread_param *param)
+static uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream, struct thread_param *param)
 {
     //printf("cb start\n");
     uint32_t start_offset= getBitSize(bitstream);
@@ -499,7 +287,7 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     uint32_t current_offset = getBitSize(bitstream);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream, struct thread_param *param)
+static uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream, struct thread_param *param)
 {
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize(bitstream);
@@ -527,10 +315,13 @@ uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t
     uint32_t current_offset = getBitSize(bitstream);
     return ((current_offset - start_offset)/8);
 }
-uint8_t qScale2quantization_index(uint8_t qscale)
+
+#if 0
+static uint8_t qScale2quantization_index(uint8_t qscale)
 {
     return qscale;
 }
+#endif
 
 uint32_t encode_slice(struct Slice *param)
 {

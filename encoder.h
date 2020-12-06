@@ -11,10 +11,11 @@
 
 #include <stdint.h>
 
+#if 0
 #define MATRIX_ROW_NUM  (8)
 #define MATRIX_COLUMN_NUM  (8)
 #define MATRIX_NUM (MATRIX_ROW_NUM*MATRIX_COLUMN_NUM)
-
+#endif
 
 //max 8192 x 4096
 #define MAX_SLICE_NUM	(131072)
@@ -34,10 +35,12 @@ struct encoder_param {
     uint16_t *cr_data;
     bool format_444;
 };
-extern void encoder_init(void);
-extern uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size);
-extern int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize);
-extern uint32_t GetEncodeHorizontal(int32_t horizontal);
-extern uint32_t GetEncodeVertical(int32_t vertical);
+
+int32_t GetSliceNum(int32_t horizontal, int32_t vertical, int32_t sliceSize);
+uint32_t GetEncodeHorizontal(int32_t horizontal);
+uint32_t GetEncodeVertical(int32_t vertical);
+
+void encoder_init(void);
+uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size);
 
 #endif
