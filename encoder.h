@@ -11,11 +11,6 @@
 
 #include <stdint.h>
 
-#if 0
-#define MATRIX_ROW_NUM  (8)
-#define MATRIX_COLUMN_NUM  (8)
-#define MATRIX_NUM (MATRIX_ROW_NUM*MATRIX_COLUMN_NUM)
-#endif
 
 //max 8192 x 4096
 #define MAX_SLICE_NUM	(131072)
