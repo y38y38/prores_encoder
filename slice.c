@@ -16,6 +16,7 @@
 #include <pthread.h>
 
 
+
 #include "config.h"
 #include "dct.h"
 #include "bitstream.h"
@@ -510,18 +511,22 @@ void pre_dct(int16_t *block, int32_t  block_num)
 }
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
+#if 0
 #define MAX_SLICE_DATA	(2048)
 
-int16_t y_slice[MAX_SLICE_DATA];
-int16_t cb_slice[MAX_SLICE_DATA];
-int16_t cr_slice[MAX_SLICE_DATA];
+int16_t y_slice[MAX_THREAD_NUM][MAX_SLICE_DATA];
+int16_t cb_slice[MAX_THREAD_NUM][MAX_SLICE_DATA];
+int16_t cr_slice[MAX_THREAD_NUM][MAX_SLICE_DATA];
+#endif
 
-uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream * bitstream)
+uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream * bitstream, struct thread_param *param)
 {
+	//printf("qscale %d %x\n", __LINE__, bitstream->bitstream_buffer[1]);
+
     //print_slice(y_data, 8);
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize(bitstream);
-    //printf("start_offset %d\n", start_offset);
+//    printf("start_offset %p %d\n", bitstream, start_offset/8);
 
 //    getYDataToBlock((uint16_t*)y_slice, y_data,mb_x,mb_y,slice_size_in_mb);
 #if 0
@@ -533,34 +538,37 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
 		first = 1;
 	}
 #endif
-	getYver2((uint16_t*)y_slice, y_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
+	getYver2((uint16_t*)param->y_slice, y_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
 
     //printf("before\n");
     //print_pixels(y_slice, 8);
 
     //printf("pre\n");
-    pre_dct(y_slice, slice_size_in_mb * MB_IN_BLOCK);
+    pre_dct(param->y_slice, slice_size_in_mb * MB_IN_BLOCK);
     //printf("after\n");
     //print_pixels(y_slice, 8);
+	//printf("qscale %d %x\n", __LINE__, bitstream->bitstream_buffer[1]);
 
     int32_t i;
     //print_slice(y_slice, 8);
     for (i = 0;i< slice_size_in_mb * MB_IN_BLOCK;i++) {
-        dct_block(&y_slice[i * BLOCK_IN_PIXEL]);
+        dct_block(&param->y_slice[i * BLOCK_IN_PIXEL]);
     }
     //print_slice(y_slice, 8);
     //print_slice(y_slice, 8);
     //
 
-    pre_quant(y_slice, slice_size_in_mb * MB_IN_BLOCK);
+    pre_quant(param->y_slice, slice_size_in_mb * MB_IN_BLOCK);
 
-    encode_qt(y_slice, matrix, slice_size_in_mb * MB_IN_BLOCK);
+    encode_qt(param->y_slice, matrix, slice_size_in_mb * MB_IN_BLOCK);
     //print_slice(y_slice, 8);
-    encode_qscale(y_slice, scale , slice_size_in_mb * MB_IN_BLOCK);
+    encode_qscale(param->y_slice, scale , slice_size_in_mb * MB_IN_BLOCK);
+//	printf("qscale %d %x\n", __LINE__, bitstream->bitstream_buffer[1]);
 
-
-    entropy_encode_dc_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK, bitstream);
-    entropy_encode_ac_coefficients(y_slice, slice_size_in_mb * MB_IN_BLOCK, bitstream);
+    entropy_encode_dc_coefficients(param->y_slice, slice_size_in_mb * MB_IN_BLOCK, bitstream);
+//	printf("qscale %d %x\n", __LINE__, bitstream->bitstream_buffer[1]);
+    //printf("size %d %p\n", getBitSize(bitstream)/8, bitstream);
+    entropy_encode_ac_coefficients(param->y_slice, slice_size_in_mb * MB_IN_BLOCK, bitstream);
 
     //byte aliened
     uint32_t size  = getBitSize(bitstream);
@@ -568,19 +576,21 @@ uint32_t encode_slice_y(uint16_t*y_data, uint32_t mb_x, uint32_t mb_y, int32_t s
         setBit(bitstream, 0x0, 8 - (size & 7));
     }
     uint32_t current_offset = getBitSize(bitstream);
-    //printf("current_offset %d\n",current_offset );
+//    printf("current_offset %d\n",current_offset/8 );
     //printf("%s end\n", __FUNCTION__);
+//	printf("qscale %d %x\n", __LINE__, bitstream->bitstream_buffer[1]);
+
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream)
+uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream, struct thread_param *param)
 {
     //printf("cb start\n");
     uint32_t start_offset= getBitSize(bitstream);
 
     //getCbDataToBlock((uint16_t*)cb_slice, cb_data,mb_x,mb_y,slice_size_in_mb);
-	getCver2((uint16_t*)cb_slice, cb_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
+	getCver2((uint16_t*)param->cb_slice, cb_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
 
-    pre_dct(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    pre_dct(param->cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
     int32_t i;
     //memset(cb_slice, 0x0, 64);
@@ -588,17 +598,17 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //g_first = 0;
     //print_slice_cb(cb_slice, 4);
     for (i = 0;i< slice_size_in_mb * MB_422C_IN_BLCCK;i++) {
-        dct_block(&cb_slice[i* BLOCK_IN_PIXEL]);
+        dct_block(&param->cb_slice[i* BLOCK_IN_PIXEL]);
     }
     //printf("af\n");
     //print_slice_cb(cb_slice, 4);
-    pre_quant(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    pre_quant(param->cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    encode_qt(cb_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
-    encode_qscale(cb_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qt(param->cb_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qscale(param->cb_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    entropy_encode_dc_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
-    entropy_encode_ac_coefficients(cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
+    entropy_encode_dc_coefficients(param->cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
+    entropy_encode_ac_coefficients(param->cb_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
 
     //byte aliened
     uint32_t size  = getBitSize(bitstream);
@@ -609,30 +619,30 @@ uint32_t encode_slice_cb(uint16_t*cb_data, uint32_t mb_x, uint32_t mb_y, int32_t
     //printf("%s end\n", __FUNCTION__);
     return ((current_offset - start_offset)/8);
 }
-uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream)
+uint32_t encode_slice_cr(uint16_t*cr_data, uint32_t mb_x, uint32_t mb_y, int32_t scale, uint8_t *matrix, uint32_t slice_size_in_mb, int horizontal, int vertical, struct bitstream *bitstream, struct thread_param *param)
 {
     //printf("%s start\n", __FUNCTION__);
     uint32_t start_offset= getBitSize(bitstream);
 
 //    getCbDataToBlock((uint16_t*)cr_slice, cr_data,mb_x,mb_y,slice_size_in_mb);
-	getCver2((uint16_t*)cr_slice, cr_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
+	getCver2((uint16_t*)param->cr_slice, cr_data, mb_x,mb_y,slice_size_in_mb, horizontal, vertical);
 
-    pre_dct(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    pre_dct(param->cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
 
     int32_t i;
     //extern int32_t g_first;
     //g_first = 0;
     //print_slice_cb(cr_slice, 4);
     for (i = 0;i< slice_size_in_mb * MB_422C_IN_BLCCK;i++) {
-        dct_block(&cr_slice[i* BLOCK_IN_PIXEL]);
+        dct_block(&param->cr_slice[i* BLOCK_IN_PIXEL]);
     }
     //print_slice_cb(cr_slice, 4);
-    pre_quant(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
-    encode_qt(cr_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
-    encode_qscale(cr_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
+    pre_quant(param->cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qt(param->cr_slice, matrix, slice_size_in_mb * MB_422C_IN_BLCCK);
+    encode_qscale(param->cr_slice,scale , slice_size_in_mb * MB_422C_IN_BLCCK);
 
-    entropy_encode_dc_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
-    entropy_encode_ac_coefficients(cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
+    entropy_encode_dc_coefficients(param->cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
+    entropy_encode_ac_coefficients(param->cr_slice, slice_size_in_mb * MB_422C_IN_BLCCK, bitstream);
     //byte aliened
     uint32_t size  = getBitSize(bitstream);
     if (size & 7 )  {
@@ -659,6 +669,9 @@ extern void wait_write_bitstream(struct thread_param * param);
 
 uint32_t encode_slice(struct Slice *param)
 {
+	//wait_write_bitstream(param->thread_param);
+
+	//printf("encode_slice 1 %d %p\n", param->slice_no, param->bitstream->bitstream_buffer);
 	initBitStream(param->bitstream);
 
     uint32_t start_offset= getBitSize(param->bitstream);
@@ -670,6 +683,7 @@ uint32_t encode_slice(struct Slice *param)
     uint8_t reserve =0x0;
     setBit(param->bitstream, reserve, 3);
 
+	//printf("qscale = %d\n", param->qscale);
     setByte(param->bitstream, &param->qscale, 1);
 
     uint32_t code_size_of_y_data_offset = getBitSize(param->bitstream);
@@ -683,55 +697,108 @@ uint32_t encode_slice(struct Slice *param)
     size = 0;
     uint16_t coded_size_of_cb_data = SET_DATA16(size);
     setByte(param->bitstream, (uint8_t*)&coded_size_of_cb_data , 2);
+	//printf("1.1 %d %d\n", param->slice_no, getBitSize(param->bitstream) / 8);
 
 //	printf("s\n");
+#if 0
+
+	FILE *outfd;
+	if (param->slice_no== 0 ) {
+		outfd = fopen("./0.bin", "w");
+	} else if (param->slice_no== 1 ) {
+		outfd = fopen("./1.bin", "w");
+
+	} else if (param->slice_no== 2 ) {
+		outfd = fopen("./2.bin", "w");
+	} else {
+		outfd = fopen("./3.bin", "w");
+	}
+	fwrite(param->bitstream->bitstream_buffer, 1, getBitSize(param->bitstream)/8, outfd);
+	fclose(outfd);
+#endif
 
     //printf("%s start %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
+	//printf("thread no %d\n", param->thread_param->thread_no);
+	//printf("qscale %d %x\n", __LINE__, param->bitstream->bitstream_buffer[1]);
+    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream, param->thread_param);
+#if 0
+	FILE *outfd;
+	if (param->slice_no== 0 ) {
+		outfd = fopen("./0.bin", "w");
+	} else if (param->slice_no== 1 ) {
+		outfd = fopen("./1.bin", "w");
 
-    size = (uint16_t)encode_slice_y(param->y_data, param->mb_x, param->mb_y, param->qscale, param->luma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
+	} else if (param->slice_no== 2 ) {
+		outfd = fopen("./2.bin", "w");
+	} else {
+		outfd = fopen("./3.bin", "w");
+	}
+	fwrite(param->bitstream->bitstream_buffer, 1, getBitSize(param->bitstream)/8, outfd);
+	fclose(outfd);
+#endif
     //exit(1);
     uint16_t y_size  = SET_DATA16(size);
     //printf("y %d %x\n", size, size);
-    
+	//printf("1.2 %d %d\n", param->slice_no, getBitSize(param->bitstream) / 8);
+    //printf("%p\n", param->bitstream->bitstream_buffer);
     uint16_t cb_size;
     if (param->format_444 == true) {
-        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
+        size = (uint16_t)encode_slice_y(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream, param->thread_param);
         cb_size = SET_DATA16(size);
         //printf("cb %d\n", size);
         //exit(1);
-        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
+        size = (uint16_t)encode_slice_y(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream, param->thread_param);
     } else {
-        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
+        size = (uint16_t)encode_slice_cb(param->cb_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream, param->thread_param);
         cb_size = SET_DATA16(size);
         //printf("cb %d\n", size);
         //exit(1);
-        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream);
+        size = (uint16_t)encode_slice_cr(param->cr_data, param->mb_x, param->mb_y, param->qscale, param->chroma_matrix, param->slice_size_in_mb, param->horizontal, param->vertical, param->bitstream, param->thread_param);
     }
 
     //uint16_t cr_size = SET_DATA16(size);
     //printf("cr%d\n", size);
     setByteInOffset(param->bitstream, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
-    //printf("%d %x\n",code_size_of_y_data_offset,code_size_of_y_data_offset); 
+    //printf("%d %x \n",code_size_of_y_data_offset,code_size_of_y_data_offset); 
     setByteInOffset(param->bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
+    //printf("%d %x \n",code_size_of_cb_data_offset,code_size_of_cb_data_offset); 
     uint32_t current_offset = getBitSize(param->bitstream);
 
 	write_slice_size(param->slice_no, ((current_offset - start_offset)/8));
     //printf("%s end %d %d\n", __FUNCTION__,param->mb_x, param->mb_y);
 //	printf("e\n");
 		//printf("wait_write_bitstream\n");
+	//printf("2 %d %d \n", param->slice_no, getBitSize(param->bitstream) / 8);
 	wait_write_bitstream(param->thread_param);
 	//printf("write_bitstream\n");
+	//printf("3 %d %d\n", param->slice_no, getBitSize(param->bitstream) / 8);
 
 
 
 
 	setByte(param->real_bitsteam, param->bitstream->bitstream_buffer, getBitSize(param->bitstream) / 8);
+#if 0
+	FILE *outfd;
+	if (param->slice_no== 0 ) {
+		outfd = fopen("./0.bin", "w");
+	} else if (param->slice_no== 1 ) {
+		outfd = fopen("./1.bin", "w");
+
+	} else if (param->slice_no== 2 ) {
+		outfd = fopen("./2.bin", "w");
+	} else {
+		outfd = fopen("./3.bin", "w");
+	}
+	fwrite(param->bitstream->bitstream_buffer, 1, getBitSize(param->bitstream)/8, outfd);
+	fclose(outfd);
+#endif
 	if (param->end == true) {
 		//printf("end of frame\n");
 		pthread_mutex_unlock(&end_frame_mutex);
 	} else {
 		start_write_next_bitstream(param->thread_param);
 	}
+	//printf("4 %d\n", param->slice_no);
 
     return ((current_offset - start_offset)/8);
 }

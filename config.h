@@ -9,7 +9,7 @@
 #define DEL_MULTIPLY
 
 
-#define MAX_THREAD_NUM	(1)
+#define MAX_THREAD_NUM	(32)
 //#define MAX_THREAD_NUMBER	(1)
 
 #define MAX_SEQ_NUMBER 	(100)

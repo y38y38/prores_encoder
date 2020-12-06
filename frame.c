@@ -87,7 +87,7 @@ void frame_end_wait(void);
 uint16_t slice_size_table[MAX_SLICE_NUM];
 
 struct bitstream slice_bitstream[MAX_THREAD_NUM];
-uint8_t slice_bistream_buffer[MAX_SLICE_BITSTREAM_SIZE];
+uint8_t slice_bistream_buffer[MAX_THREAD_NUM][MAX_SLICE_BITSTREAM_SIZE];
 
 
 struct Slice slice_param[MAX_SLICE_NUM];
@@ -173,7 +173,7 @@ void encode_slices(struct encoder_param * param)
 #endif
        slice_param[i].format_444 = param->format_444;
 	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
-	   slice_param[i].bitstream->bitstream_buffer = &slice_bistream_buffer[i%MAX_THREAD_NUM];
+	   slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[i%MAX_THREAD_NUM];
 	   slice_param[i].real_bitsteam = &write_bitstream;
 		slice_param[i].thread_param = &params[i%MAX_THREAD_NUM];
 	   if (i == (slice_num_max -1)) {
@@ -387,7 +387,6 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
     uint32_t picture_end = (getBitSize(&write_bitstream)) >>  3 ;
 
     uint32_t tmp  = picture_end - picture_size_offset;
-    //printf("%x\n", tmp);
     uint32_t picture_size = SET_DATA32(tmp);
     //printf("picture_size2 = %x\n", picture_size);
     //for debug
@@ -399,6 +398,7 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
     uint8_t *ptr = getBitStream(&write_bitstream, encode_frame_size);
     uint32_t frame_size_data = SET_DATA32(*encode_frame_size);
     setByteInOffset(&write_bitstream, frame_size_offset, (uint8_t*)&frame_size_data , 4);
+    //printf("frame_size_data %x\n", frame_size_data);
     return ptr;
 }
 #if 0

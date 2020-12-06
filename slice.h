@@ -13,12 +13,19 @@
 #include <stdbool.h>
 #include "encoder.h"
 
+
+#define MAX_SLICE_DATA	(2048)
+
 struct thread_param {
-	int seq;
+//	int seq;
 	int thread_no;
 //	pthread_mutex_t  my_thread_mutex;
 	pthread_mutex_t  write_bitstream_my_mutex;
 	pthread_mutex_t  *write_bitstream_next_mutex;
+	int16_t y_slice[MAX_SLICE_DATA];
+	int16_t cb_slice[MAX_SLICE_DATA];
+	int16_t cr_slice[MAX_SLICE_DATA];
+
 };
 
 
