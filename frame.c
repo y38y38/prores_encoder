@@ -28,6 +28,18 @@
 #include "slice.h"
 #include "encoder.h"
 
+
+#define MAX_SLICE_DATA	(2048)
+
+struct thread_param {
+	int thread_no;
+	pthread_mutex_t  write_bitstream_my_mutex;
+	pthread_mutex_t  *write_bitstream_next_mutex;
+	int16_t y_slice[MAX_SLICE_DATA];
+};
+
+
+
 #define MACRO_BLOCK_Y_HORIZONTAL  (16)
 #define MACRO_BLOCK_Y_VERTICAL    (16)
 
@@ -273,11 +285,10 @@ void encode_slices(struct encoder_param * param)
        slice_param[i].format_444 = param->format_444;
 	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
 	   slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[i%MAX_THREAD_NUM];
-//	   slice_param[i].real_bitsteam = &write_bitstream;
-		slice_param[i].thread_param = &params[i%MAX_THREAD_NUM];
-		slice_param[i].y_slice = params[i%MAX_THREAD_NUM].y_slice;
-		slice_param[i].cb_slice = params[i%MAX_THREAD_NUM].cb_slice;
-		slice_param[i].cr_slice = params[i%MAX_THREAD_NUM].cr_slice;
+//		slice_param[i].y_slice = params[i%MAX_THREAD_NUM].y_slice;
+//		slice_param[i].cb_slice = params[i%MAX_THREAD_NUM].cb_slice;
+//		slice_param[i].cr_slice = params[i%MAX_THREAD_NUM].cr_slice;
+		slice_param[i].working_buffer = params[i%MAX_THREAD_NUM].y_slice;
 
 
 	   if (i == (slice_num_max -1)) {
@@ -393,7 +404,8 @@ void *thread_start_routin(void *arg)
 
 		int index = (counter * MAX_THREAD_NUM) + param->thread_no;
 
-		encode_slice(&slice_param[index]);
+		uint16_t slice_size = encode_slice(&slice_param[index]);
+		write_slice_size(slice_param[index].slice_no, slice_size);
 
 #if 1
 		wait_write_bitstream(param);

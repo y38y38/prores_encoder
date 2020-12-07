@@ -16,23 +16,8 @@
 #include "prores.h"
 #include "encoder.h"
 
-
-#define MAX_SLICE_DATA	(2048)
-
-struct thread_param {
-	int thread_no;
-	pthread_mutex_t  write_bitstream_my_mutex;
-	pthread_mutex_t  *write_bitstream_next_mutex;
-	int16_t y_slice[MAX_SLICE_DATA];
-	int16_t cb_slice[MAX_SLICE_DATA];
-	int16_t cr_slice[MAX_SLICE_DATA];
-
-};
-
-
 struct Slice {
 	int slice_no;
-//	uint32_t thread_num;
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;
     uint8_t qscale;
@@ -47,15 +32,10 @@ struct Slice {
     bool format_444;
 	bool end;
 	struct bitstream *bitstream;
-	struct thread_param *thread_param;
-	int16_t *y_slice;//working buffer
-	int16_t *cb_slice;//working buffer
-	int16_t *cr_slice;//working buffer
+	int16_t *working_buffer;//working buffer 
 
 };
 
-void encode_slice(struct Slice *param);
+uint16_t encode_slice(struct Slice *param);
 
-uint8_t luma_matrix_[MATRIX_NUM];
-uint8_t chroma_matrix_[MATRIX_NUM];
 #endif
