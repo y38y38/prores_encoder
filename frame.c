@@ -275,6 +275,11 @@ void encode_slices(struct encoder_param * param)
 	   slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[i%MAX_THREAD_NUM];
 //	   slice_param[i].real_bitsteam = &write_bitstream;
 		slice_param[i].thread_param = &params[i%MAX_THREAD_NUM];
+		slice_param[i].y_slice = params[i%MAX_THREAD_NUM].y_slice;
+		slice_param[i].cb_slice = params[i%MAX_THREAD_NUM].cb_slice;
+		slice_param[i].cr_slice = params[i%MAX_THREAD_NUM].cr_slice;
+
+
 	   if (i == (slice_num_max -1)) {
 			slice_param[i].end = 1;
 		} else {
