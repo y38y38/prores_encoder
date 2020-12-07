@@ -32,22 +32,26 @@ struct thread_param {
 
 struct Slice {
 	int slice_no;
-	uint32_t thread_num;
+//	uint32_t thread_num;
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;
     uint8_t qscale;
     uint32_t slice_size_in_mb;
     uint32_t horizontal;
     uint32_t vertical;
-    uint16_t *y_data;
-    uint16_t *cb_data;
-    uint16_t *cr_data;
+    uint16_t *y_data;//original data
+    uint16_t *cb_data;//original data
+    uint16_t *cr_data;//original data
     uint32_t mb_x;
     uint32_t mb_y;
     bool format_444;
 	bool end;
 	struct bitstream *bitstream;
 	struct thread_param *thread_param;
+	int16_t *y_slice;//working buffer
+	int16_t *cb_slice;//working buffer
+	int16_t *cr_slice;//working buffer
+
 };
 
 void encode_slice(struct Slice *param);
