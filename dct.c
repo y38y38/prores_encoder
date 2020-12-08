@@ -16,22 +16,7 @@
 #include "dct.h"
 
 
-
 static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
-
-void print_block(int16_t *block)
-{
-
-    int x,y;
-    for (y=0;y<MAX_Y;y++) {
-        for (x=0;x<MAX_X;x++) {
-            printf("%d ", block[(y * MAX_X) + x]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
 
 int dct_block(int16_t *block) {
     int h,v,i,x,y;
