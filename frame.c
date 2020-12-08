@@ -81,14 +81,6 @@ static uint32_t slice_num_max;
 
 
 
-
-
-
-void write_slice_size(int slice_no, int size)
-{
-	slice_size_table[slice_no] = size;
-	return;
-}
 static uint32_t picture_size_offset_ = 0;
 
 void set_picture_header(struct encoder_param* param)
@@ -240,6 +232,12 @@ void frame_end_wait(void) {
 	pthread_mutex_lock(&end_frame_mutex);
 }
 
+void write_slice_size(int slice_no, int size)
+{
+	slice_size_table[slice_no] = size;
+	return;
+}
+
 
 void encode_slices(struct encoder_param * param)
 {
@@ -270,31 +268,29 @@ void encode_slices(struct encoder_param * param)
         while ((mb_x_max - mb_x) < slice_mb_count)
             slice_mb_count >>=1;
 
-       slice_param[i].slice_no = i;
-       slice_param[i].luma_matrix = param->luma_matrix;
-       slice_param[i].chroma_matrix = param->chroma_matrix;
-       slice_param[i].qscale = param->qscale_table[i];
-       slice_param[i].slice_size_in_mb= param->slice_size_in_mb;
-       slice_param[i].horizontal= param->horizontal;
-       slice_param[i].vertical= param->vertical;
-       slice_param[i].y_data= (uint16_t*)param->y_data;
-       slice_param[i].cb_data= (uint16_t*)param->cb_data;
-       slice_param[i].cr_data= (uint16_t*)param->cr_data;
-       slice_param[i].mb_x = mb_x;
-       slice_param[i].mb_y = mb_y;
-       slice_param[i].format_444 = param->format_444;
-	   slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
-	   slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[i%MAX_THREAD_NUM];
-//		slice_param[i].y_slice = params[i%MAX_THREAD_NUM].y_slice;
-//		slice_param[i].cb_slice = params[i%MAX_THREAD_NUM].cb_slice;
-//		slice_param[i].cr_slice = params[i%MAX_THREAD_NUM].cr_slice;
+        slice_param[i].slice_no = i;
+        slice_param[i].luma_matrix = param->luma_matrix;
+        slice_param[i].chroma_matrix = param->chroma_matrix;
+        slice_param[i].qscale = param->qscale_table[i];
+        slice_param[i].slice_size_in_mb= param->slice_size_in_mb;
+        slice_param[i].horizontal= param->horizontal;
+        slice_param[i].vertical= param->vertical;
+        slice_param[i].y_data= (uint16_t*)param->y_data;
+        slice_param[i].cb_data= (uint16_t*)param->cb_data;
+        slice_param[i].cr_data= (uint16_t*)param->cr_data;
+        slice_param[i].mb_x = mb_x;
+        slice_param[i].mb_y = mb_y;
+        slice_param[i].format_444 = param->format_444;
+
+	    slice_param[i].bitstream = &slice_bitstream[i%MAX_THREAD_NUM];
+	    slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[i%MAX_THREAD_NUM];
 		slice_param[i].working_buffer = params[i%MAX_THREAD_NUM].y_slice;
 
 
 	   if (i == (slice_num_max -1)) {
-			slice_param[i].end = 1;
+			slice_param[i].end = true;
 		} else {
-			slice_param[i].end = 0;
+			slice_param[i].end = false;
 		}
 
         mb_x += slice_mb_count;
@@ -407,7 +403,6 @@ void *thread_start_routin(void *arg)
 		uint16_t slice_size = encode_slice(&slice_param[index]);
 		write_slice_size(slice_param[index].slice_no, slice_size);
 
-#if 1
 		wait_write_bitstream(param);
 		setByte(&write_bitstream, slice_param[index].bitstream->bitstream_buffer, getBitSize(slice_param[index].bitstream)/8);
 		if (slice_param[index].end == true) {
@@ -416,7 +411,6 @@ void *thread_start_routin(void *arg)
 		} else {
 			start_write_next_bitstream(param);
 		}
-#endif
 
 		counter++;
 		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);

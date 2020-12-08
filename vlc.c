@@ -18,18 +18,6 @@
 
 #define MAX_COEFFICIENT_NUM_PER_BLOCK (64)
 
-
-static int32_t GetAbs(int32_t val)
-{
-    if (val < 0) {
-        //printf("m\n");
-        return val * -1;
-    } else {
-        //printf("p\n");
-        return val;
-    }
-}
-
 static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
     int32_t q  = val >> k;
@@ -125,6 +113,19 @@ static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, str
     return;
 
 }
+
+static int32_t GetAbs(int32_t val)
+{
+    if (val < 0) {
+        //printf("m\n");
+        return val * -1;
+    } else {
+        //printf("p\n");
+        return val;
+    }
+}
+
+
 
 static int32_t Signedintegertosymbolmapping(int32_t val)
 {

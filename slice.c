@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 #include "prores.h"
 #include "encoder.h"
 
@@ -21,67 +22,9 @@
 #include "vlc.h"
 #include "slice.h"
 
-void aprint_block(int16_t *block)
-{
-
-    int32_t x,y;
-    for (y=0;y<8;y++) {
-        for (x=0;x<8;x++) {
-            printf("%d ", block[(y * 8) + x]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-void print_mb(int16_t *mb)
-{
-    int32_t i;
-    for(i=0;i<4;i++) {
-        aprint_block(mb + (i*64));
-    }
-        
-
-}
-void print_mb_cb(int16_t *mb)
-{
-    int32_t i;
-    for(i=0;i<2;i++) {
-        aprint_block(mb + (i*64));
-    }
-        
-
-}
-void print_slice_cb(int16_t *slice, int32_t mb_num)
-{
-    int32_t i;
-    for(i=0;i<mb_num;i++) {
-        print_mb_cb(slice + (i*64)*2);
-    }
-        
-
-}
-void print_slice(int16_t *slice, int32_t mb_num)
-{
-    int32_t i;
-    for(i=0;i<mb_num;i++) {
-        print_mb(slice + (i*64)*4);
-    }
-        
-
-}
-void print_pixels(int16_t *slice, int32_t mb_num)
-{
-    int32_t i;
-    for(i=0;i<mb_num*4*64;i++) {
-        printf("%d\n", slice[i]);
-    }
-        
-
-}
 
 
-
-static void getYver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
+static void getPixelblock(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
 {
 	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
 	int i;
@@ -92,6 +35,7 @@ static void getYver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, i
 	//	printf(" %x\n", *(uint16_t*)(in + x + (horizontal * y) + (horizontal * i)));
 	}
 }
+
 //get 1 slice data
 static void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
@@ -113,24 +57,13 @@ static void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, 
 				offset_x = 8;
 				offset_y = 8;
 			}
-			getYver2block(out  +  i * 64 * 4 + (block * 64), in, (mb_x * 16) + (i * 16) + offset_x, (mb_y * 16) + offset_y, horizontal, vertical);
+			getPixelblock(out  +  i * 64 * 4 + (block * 64), in, (mb_x * 16) + (i * 16) + offset_x, (mb_y * 16) + offset_y, horizontal, vertical);
         }
 
     }
 	return;
 }
 
-static void getCver2block(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
-{
-	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
-	int i;
-	for(i=0;i<8;i++) {
-		memcpy(out + (i*8),
-		in + x + (horizontal * y) + (horizontal * i),
-		8 * sizeof(uint16_t));
-		//printf(" %x\n", *(uint16_t*)(in + x + (horizontal * y) + (horizontal * i)));
-	}
-}
 //get 1 slice data
 static void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
@@ -146,7 +79,7 @@ static void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, 
 				offset_x = 0;
 				offset_y = 8;
 			}
-			getCver2block(out  +  (i * 64 * 2) + (block * 64), in, (mb_x * 8) + (i * 8) + offset_x, (mb_y * 16) + offset_y, horizontal>>1, vertical);
+			getPixelblock(out  +  (i * 64 * 2) + (block * 64), in, (mb_x * 8) + (i * 8) + offset_x, (mb_y * 16) + offset_y, horizontal>>1, vertical);
         }
 
     }
@@ -299,7 +232,6 @@ uint16_t encode_slice(struct Slice *param)
     setByteInOffset(param->bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize(param->bitstream);
 
-//	write_slice_size(param->slice_no, ((current_offset - start_offset)/8));
     return ((current_offset - start_offset)/8);
 }
 

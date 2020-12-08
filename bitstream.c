@@ -21,16 +21,6 @@
 
 
 
-void initBitStream(struct bitstream *write_bitstream)
-{
-    uint8_t *buf = (uint8_t*)write_bitstream->bitstream_buffer;
-    write_bitstream->tmp_buf_byte_offset = 0;
-    write_bitstream->tmp_buf_bit_offset = 0;
-    write_bitstream->tmp_buf  = buf;
-
-    return ;
-
-}
 void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
     if (size_of_bit >= 24 )  {
@@ -102,5 +92,14 @@ uint8_t *getBitStream(struct bitstream *write_bitstream, uint32_t *size)
     return write_bitstream->tmp_buf;
 }
 
+void initBitStream(struct bitstream *write_bitstream)
+{
+    uint8_t *buf = (uint8_t*)write_bitstream->bitstream_buffer;
+    write_bitstream->tmp_buf_byte_offset = 0;
+    write_bitstream->tmp_buf_bit_offset = 0;
+    write_bitstream->tmp_buf  = buf;
 
+    return ;
+
+}
 
