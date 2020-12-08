@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <time.h>
+#include <sys/time.h>
 
 #include "config.h"
 #include "dct.h"
@@ -213,6 +215,65 @@ void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
     
 
 }
+void wait_write_bitstream(struct thread_param * param)
+{
+	int ret = pthread_mutex_lock(&param->write_bitstream_my_mutex);
+	if (ret != 0) {
+		printf("%d\n", __LINE__);
+		return;
+	}
+	return;
+}
+void start_write_next_bitstream(struct thread_param * param)
+{
+	if (param->write_bitstream_next_mutex != NULL ) {
+		int ret = pthread_mutex_unlock(param->write_bitstream_next_mutex);
+		if (ret != 0) {
+			printf("%d\n", __LINE__);
+			return;
+		}
+	}
+	return;
+}
+
+void *thread_start_routin(void *arg)
+{
+	struct thread_param *param =  (struct thread_param*)arg;
+
+
+	int counter = 0;
+	for(;;) {
+		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
+		while(slice_num_thread[param->thread_no] == 0) {
+			counter = 0;
+			pthread_cond_wait(&slice_num_thread_cond[param->thread_no], &slice_num_thread_mutex[param->thread_no]);
+		}
+		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
+
+		int index = (counter * MAX_THREAD_NUM) + param->thread_no;
+
+		uint16_t slice_size = encode_slice(&slice_param[index]);
+		write_slice_size(slice_param[index].slice_no, slice_size);
+
+		wait_write_bitstream(param);
+		setByte(&write_bitstream, slice_param[index].bitstream->bitstream_buffer, getBitSize(slice_param[index].bitstream)/8);
+		if (slice_param[index].end == true) {
+
+			pthread_mutex_unlock(&end_frame_mutex);
+		} else {
+			start_write_next_bitstream(param);
+		}
+
+		counter++;
+		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
+		slice_num_thread[param->thread_no]--;
+		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
+
+	}
+	
+}
+
+
 
 void start_write_bitstream(void) {
 		pthread_mutex_unlock(&params[0].write_bitstream_my_mutex);
@@ -313,9 +374,15 @@ void encode_slices(struct encoder_param * param)
 		pthread_mutex_unlock(&slice_num_thread_mutex[j]);
 	}
 
+	struct timeval myTime;
+	gettimeofday(&myTime,NULL);
+	printf("s %d.%d\n", myTime.tv_sec, myTime.tv_usec);
 	start_write_bitstream();
 
+
 	frame_end_wait();
+	gettimeofday(&myTime,NULL);
+	printf("e %d.%d\n", myTime.tv_sec, myTime.tv_usec);
 
     for (i = 0; i < slice_num_max ; i++) {
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
@@ -358,70 +425,6 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
     setByteInOffset(&write_bitstream, frame_size_offset, (uint8_t*)&frame_size_data , 4);
     return ptr;
 }
-
-
-void wait_write_bitstream(struct thread_param * param)
-{
-	int ret = pthread_mutex_lock(&param->write_bitstream_my_mutex);
-	if (ret != 0) {
-		printf("%d\n", __LINE__);
-		return;
-	}
-	return;
-}
-void start_write_next_bitstream(struct thread_param * param)
-{
-	if (param->write_bitstream_next_mutex != NULL ) {
-		int ret = pthread_mutex_unlock(param->write_bitstream_next_mutex);
-		if (ret != 0) {
-			printf("%d\n", __LINE__);
-			return;
-		}
-	}
-	return;
-}
-
-
-
-
-void *thread_start_routin(void *arg)
-{
-	struct thread_param *param =  (struct thread_param*)arg;
-
-
-	int counter = 0;
-	for(;;) {
-		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
-		while(slice_num_thread[param->thread_no] == 0) {
-			counter = 0;
-			pthread_cond_wait(&slice_num_thread_cond[param->thread_no], &slice_num_thread_mutex[param->thread_no]);
-		}
-		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
-
-		int index = (counter * MAX_THREAD_NUM) + param->thread_no;
-
-		uint16_t slice_size = encode_slice(&slice_param[index]);
-		write_slice_size(slice_param[index].slice_no, slice_size);
-
-		wait_write_bitstream(param);
-		setByte(&write_bitstream, slice_param[index].bitstream->bitstream_buffer, getBitSize(slice_param[index].bitstream)/8);
-		if (slice_param[index].end == true) {
-
-			pthread_mutex_unlock(&end_frame_mutex);
-		} else {
-			start_write_next_bitstream(param);
-		}
-
-		counter++;
-		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
-		slice_num_thread[param->thread_no]--;
-		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
-
-	}
-	
-}
-
-
 
 
 

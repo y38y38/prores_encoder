@@ -131,10 +131,10 @@ static int32_t Signedintegertosymbolmapping(int32_t val)
 {
     uint32_t sn;
     if (val >=0 ) {
-        sn = 2 * GetAbs(val);
+        sn = GetAbs(val) << 1;
 
     } else {
-        sn = 2 * GetAbs(val) - 1;
+        sn = (GetAbs(val) << 1) - 1;
     }
     return sn;
 }
