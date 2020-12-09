@@ -178,10 +178,11 @@ static uint8_t qScale2quantization_index(uint8_t qscale)
 
 uint16_t encode_slice(struct Slice *param)
 {
-	initBitStream(param->bitstream);
+	//initBitStream(param->bitstream);
 
     uint32_t start_offset= getBitSize(param->bitstream);
-
+	uint32_t size2;
+	printf("start_slice_offset %d %p\n", start_offset, getBitStream(param->bitstream, &size2));
     uint8_t slice_header_size = 6;
 
     setBit(param->bitstream, slice_header_size , 5);
