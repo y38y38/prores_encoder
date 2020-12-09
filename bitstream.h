@@ -21,7 +21,9 @@
                          (x & 0xff00) >>  8 )
 
 
-#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024) //1K
+//#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024) //1K
+#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024*10) //1M
+//static uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];
 
 
 struct bitstream {
