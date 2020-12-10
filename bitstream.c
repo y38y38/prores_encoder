@@ -22,6 +22,9 @@
 
 void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
+	if (write_bitstream->tmp_buf_byte_offset > (MAX_SLICE_BITSTREAM_SIZE - 4)) {
+		printf("bit overflow\n");
+	}
     if (size_of_bit >= 24 )  {
         printf("error %s %d %d\n", __FUNCTION__, __LINE__, size_of_bit);
         return;
@@ -52,9 +55,6 @@ void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bi
 
     write_bitstream->tmp_buf_byte_offset += (write_bitstream->tmp_buf_bit_offset + size_of_bit) >> 3;
     write_bitstream->tmp_buf_bit_offset = (write_bitstream->tmp_buf_bit_offset + size_of_bit) & 7;
-	if (write_bitstream->tmp_buf_byte_offset > MAX_SLICE_BITSTREAM_SIZE) {
-		printf("bit overflow\n");
-	}
 	//printf("offset %d %d\n", write_bitstream->tmp_buf_byte_offset, write_bitstream->tmp_buf_bit_offset);
 }
 
