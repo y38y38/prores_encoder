@@ -298,6 +298,9 @@ int main(int argc, char **argv)
     uint32_t size = (horizontal_ * vertical_) << 1;
     for (int32_t i=0;;i++) {
         //printf("%d\n", size);
+#ifdef TIME_SCALE
+		if (i==0) {
+#endif
         size_t readsize = fread(y_data, 1, size, input);
         if (readsize != size) {
             if (readsize != 0) {
@@ -355,15 +358,23 @@ int main(int argc, char **argv)
                 break;
             }
         }
+#ifdef TIME_SCALE
+		}
+#endif
         uint32_t frame_size;
         uint8_t *frame = encode_frame(&param, &frame_size);
-
+#ifndef TIME_SCALE
         size_t writesize = fwrite(frame, 1, frame_size,  output);
         if (writesize != frame_size) {
             printf("%s %d %d\n", __FUNCTION__, __LINE__, (int)writesize);
             //printf("write %d %p %d %p \n", (int)writesize, raw_data, raw_size,output);
             return -1;
         }
+#else
+		if (i==5) {
+			break;
+		}
+#endif
     }
 
     fclose(input);
