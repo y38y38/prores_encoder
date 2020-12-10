@@ -285,10 +285,16 @@ void write_slice_size(int slice_no, int size)
 
 //extern uint32_t slice_num_max;
 
+// thread 12
+//slice_max 4
+
+
 int getStartSliceNumForThread(int thread_no)
 {
 	int index;
-	if (MAX_THREAD_NUM != 1) {
+	if (slice_num_max < MAX_THREAD_NUM) {
+		index = thread_no;
+	} else 	if (MAX_THREAD_NUM != 1) {
 		index = (slice_num_max / (MAX_THREAD_NUM - 1))	 * thread_no;
 	} else {
 		index = 0;
@@ -376,6 +382,7 @@ void *thread_start_routin(void *arg)
 		for(j=0;j<slice_num_thread[param->thread_no];j++) {
 			if (j==0) {
 				initBitStream(slice_param[index].bitstream);
+				//printf("bitstream %p %p %d \n", slice_param[index].bitstream, slice_param[index].bitstream->bitstream_buffer, index);
 			}
 //			last_index = index;
 			uint16_t slice_size = encode_slice(&slice_param[index+j]);
@@ -394,7 +401,7 @@ void *thread_start_routin(void *arg)
 
 			pthread_mutex_unlock(&end_frame_mutex);
 		} else {
-		//printf("start6\n");
+		    //printf("start6\n");
 			start_write_next_bitstream(param);
 		}
 		//printf("start7\n");
@@ -474,7 +481,7 @@ void encode_slices(struct encoder_param * param)
         slice_param[i].mb_x = mb_x;
         slice_param[i].mb_y = mb_y;
         slice_param[i].format_444 = param->format_444;
-//		printf("Threadno %d %d\n",i , thread_no);
+		//printf("Threadno %d %d\n",i , thread_no);
 	    slice_param[i].bitstream = &slice_bitstream[thread_no];
 	    slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[thread_no];
 		if (i==510) {
@@ -484,10 +491,10 @@ void encode_slices(struct encoder_param * param)
 
 
 	   if (i == (slice_num_max -1)) {
-		   //printf("end %d", i);
+		   //printf("end %d\n", i);
 			slice_param[i].end = true;
 		} else {
-		   //printf("no end %d", i);
+		   //printf("no end %d\n", i);
 			slice_param[i].end = false;
 		}
 
@@ -505,7 +512,7 @@ void encode_slices(struct encoder_param * param)
 	for(j=0;j<MAX_THREAD_NUM;j++) {
 		pthread_mutex_lock(&slice_num_thread_mutex[j]);
 		slice_num_thread[j] = getSliceNumForThread(j);
-		//printf("num %d\n", slice_num_thread[j]);
+		//printf("num %d %d\n", slice_num_thread[j], j);
 		pthread_cond_signal(&slice_num_thread_cond[j]);
 		pthread_mutex_unlock(&slice_num_thread_mutex[j]);
 	}
@@ -520,7 +527,9 @@ void encode_slices(struct encoder_param * param)
 	frame_end_wait();
 	gettimeofday(&endTime,NULL);
 	//printf("e %d.%d\n", (int)endTime.tv_sec, (int)endTime.tv_usec);
+#ifdef TIME_SCALE
 	printf("end %d\n", (int)(endTime.tv_sec - startTime.tv_sec));
+#endif
     for (i = 0; i < slice_num_max ; i++) {
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
     }
