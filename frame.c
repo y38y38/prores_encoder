@@ -295,7 +295,6 @@ int getStartSliceNumForThread(int thread_no)
 	}
 	return index;
 }
-
 //thread 3
 //slice_max  5
 //slice 0 0
@@ -304,11 +303,27 @@ int getStartSliceNumForThread(int thread_no)
 //slice 3 1
 //slice 4 2
 
+
+//thread 2
+//slice_max  5
+//slice 0 0
+//slice 1 0
+//slice 2 0
+//slice 3 0
+//slice 4 0
+
+//thread 3
+//slice max 1020
+//slice 510 
 int getThreadNumForSliceNo(int slice_no)
 {
 	int thread_no;
-	if (MAX_THREAD_NUM != 1) {
-		thread_no = slice_no / (MAX_THREAD_NUM - 1);
+	int slice_num_for_thread;
+	if (slice_num_max < MAX_THREAD_NUM) {
+		thread_no = slice_no;
+	} else 	if ((MAX_THREAD_NUM != 1) &&(MAX_THREAD_NUM != 2)) {
+		slice_num_for_thread = slice_num_max / (MAX_THREAD_NUM -1);
+		thread_no = slice_no / slice_num_for_thread;
 	} else {
 		thread_no = 0;
 	}
@@ -318,11 +333,17 @@ int getThreadNumForSliceNo(int slice_no)
 int getSliceNumForThread(int thread_no) 
 {
 	int num;
-	if (MAX_THREAD_NUM != 1) {
-		if ((MAX_THREAD_NUM -1) == thread_no) {
-			num = slice_num_max % MAX_THREAD_NUM ;
+	if (slice_num_max < MAX_THREAD_NUM) {
+		if (slice_num_max  > thread_no) {
+			num = 1;
 		} else {
-			num = slice_num_max / MAX_THREAD_NUM ;
+			num = 0;
+		}
+	} else if (MAX_THREAD_NUM != 1) {
+		if ((MAX_THREAD_NUM -1) == thread_no) {
+			num = slice_num_max % (MAX_THREAD_NUM -1);
+		} else {
+			num = slice_num_max / (MAX_THREAD_NUM -1) ;
 		}
 	} else {
 			num = slice_num_max;
@@ -338,7 +359,7 @@ void *thread_start_routin(void *arg)
 	int counter = 0;
 	for(;;) {
 #if 1
-		printf("start 1\n");
+		//printf("start 1\n");
 		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
 		while(slice_num_thread[param->thread_no] == 0) {
 			counter = 0;
@@ -346,7 +367,7 @@ void *thread_start_routin(void *arg)
 		}
 		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
 #endif
-		printf("start 2\n");
+		//printf("start 2\n");
 		int j;
 		int index;
 		int size=0;
@@ -357,32 +378,32 @@ void *thread_start_routin(void *arg)
 				initBitStream(slice_param[index].bitstream);
 			}
 //			last_index = index;
-			uint16_t slice_size = encode_slice(&slice_param[index]);
+			uint16_t slice_size = encode_slice(&slice_param[index+j]);
 			write_slice_size(slice_param[index+j].slice_no, slice_size);
 //			index++;
 			size += slice_size;
-			printf("size=%d\n", size);
+			//printf("size=%d\n", slice_size);
 		}
 //		int index = (counter * MAX_THREAD_NUM) + param->thread_no;
-		printf("start3\n");
+		//printf("start3\n");
 		wait_write_bitstream(param);
-		printf("start4 %p %d\n", slice_param[index].bitstream->bitstream_buffer, size*8);
+		//printf("start4 %p %d\n", slice_param[index].bitstream->bitstream_buffer, size*8);
 		setByte(&write_bitstream, slice_param[index].bitstream->bitstream_buffer, size);
 		if (slice_param[index+j-1].end == true) {
-			printf("start5 \n" );
+			//printf("start5 \n" );
 
 			pthread_mutex_unlock(&end_frame_mutex);
 		} else {
-		printf("start6\n");
+		//printf("start6\n");
 			start_write_next_bitstream(param);
 		}
-		printf("start7\n");
+		//printf("start7\n");
 
 		counter++;
 		pthread_mutex_lock(&slice_num_thread_mutex[param->thread_no]);
 		slice_num_thread[param->thread_no]=0;
 		pthread_mutex_unlock(&slice_num_thread_mutex[param->thread_no]);
-		printf("start8\n");
+		//printf("start8\n");
 
 	}
 	
@@ -453,9 +474,12 @@ void encode_slices(struct encoder_param * param)
         slice_param[i].mb_x = mb_x;
         slice_param[i].mb_y = mb_y;
         slice_param[i].format_444 = param->format_444;
-		printf("Threadno %d %d\n",i , thread_no);
+//		printf("Threadno %d %d\n",i , thread_no);
 	    slice_param[i].bitstream = &slice_bitstream[thread_no];
 	    slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[thread_no];
+		if (i==510) {
+			//printf("%p %d\n", slice_bistream_buffer[thread_no], thread_no);
+		}
 		slice_param[i].working_buffer = params[thread_no].y_slice;
 
 
@@ -475,25 +499,26 @@ void encode_slices(struct encoder_param * param)
         }
 		
     }
-	printf("start thread %d %d\n", __LINE__, slice_num_max);
+	//printf("start thread %d %d\n", __LINE__, slice_num_max);
 #if 1
 	int j;
 	for(j=0;j<MAX_THREAD_NUM;j++) {
 		pthread_mutex_lock(&slice_num_thread_mutex[j]);
 		slice_num_thread[j] = getSliceNumForThread(j);
+		//printf("num %d\n", slice_num_thread[j]);
 		pthread_cond_signal(&slice_num_thread_cond[j]);
 		pthread_mutex_unlock(&slice_num_thread_mutex[j]);
 	}
 #endif
 	struct timeval myTime;
 	gettimeofday(&myTime,NULL);
-	//printf("s %d.%d\n", (int)myTime.tv_sec, (int)myTime.tv_usec);
+	printf("s %d.%d\n", (int)myTime.tv_sec, (int)myTime.tv_usec);
 	start_write_bitstream();
 
 
 	frame_end_wait();
 	gettimeofday(&myTime,NULL);
-	//printf("e %d.%d\n", (int)myTime.tv_sec, (int)myTime.tv_usec);
+	printf("e %d.%d\n", (int)myTime.tv_sec, (int)myTime.tv_usec);
 
     for (i = 0; i < slice_num_max ; i++) {
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
