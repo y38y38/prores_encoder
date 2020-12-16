@@ -15,6 +15,7 @@
 
 #define MAX_PRINT_NUM	(10)
 
+//#define FIRST_DCT_A
 
 //#define TIME_SCALE
 
