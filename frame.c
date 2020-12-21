@@ -52,8 +52,8 @@ struct thread_param {
 
 
 
-static struct bitstream write_bitstream;
-static uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];
+static struct bitstream *write_bitstream;
+//static uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];
 
 
 
@@ -129,23 +129,23 @@ void set_picture_header(struct encoder_param* param)
 {
 
     uint8_t picture_header_size = 0x8;
-    setBit(&write_bitstream, picture_header_size, 5);
+    setBit(write_bitstream, picture_header_size, 5);
 
     uint8_t reserved = 0x0;
-    setBit(&write_bitstream, reserved , 3);
+    setBit(write_bitstream, reserved , 3);
 
-    picture_size_offset_ = (getBitSize(&write_bitstream)) >> 3 ;
+    picture_size_offset_ = (getBitSize(write_bitstream)) >> 3 ;
 
     uint32_t picture_size = SET_DATA32(0);
-    setByte(&write_bitstream, (uint8_t*)&picture_size, 4);
+    setByte(write_bitstream, (uint8_t*)&picture_size, 4);
 
     uint32_t slice_num = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
     uint16_t deprecated_number_of_slices =  SET_DATA16(slice_num);
-    setByte(&write_bitstream, (uint8_t*)&deprecated_number_of_slices , 0x2);
+    setByte(write_bitstream, (uint8_t*)&deprecated_number_of_slices , 0x2);
 
 
     uint8_t reserved2 = 0x0;
-    setBit(&write_bitstream, reserved2 , 2);
+    setBit(write_bitstream, reserved2 , 2);
 
     uint8_t log2_desired_slice_size_in_mb;
     if (param->slice_size_in_mb == 1) {
@@ -157,33 +157,33 @@ void set_picture_header(struct encoder_param* param)
     } else {
         log2_desired_slice_size_in_mb = 3;
     }
-    setBit(&write_bitstream,log2_desired_slice_size_in_mb, 2);
+    setBit(write_bitstream,log2_desired_slice_size_in_mb, 2);
 
     uint8_t reserved3 = 0x0;
-    setBit(&write_bitstream, reserved3 , 4);
+    setBit(write_bitstream, reserved3 , 4);
 
 
 }
 void set_frame_header(struct encoder_param* param)
 {
     uint16_t frame_header_size = SET_DATA16(0x94);
-    setByte(&write_bitstream, (uint8_t*)&frame_header_size, 0x2);
+    setByte(write_bitstream, (uint8_t*)&frame_header_size, 0x2);
 
     uint8_t reserved = 0x0;
-    setByte(&write_bitstream, &reserved, 0x1);
+    setByte(write_bitstream, &reserved, 0x1);
 
     uint8_t bitstream_version = 0x0;
-    setByte(&write_bitstream, &bitstream_version, 0x1);
+    setByte(write_bitstream, &bitstream_version, 0x1);
 
 
     uint32_t encoder_identifier = SET_DATA32(0x4c617663);
-    setByte(&write_bitstream, (uint8_t*)&encoder_identifier, 0x4);
+    setByte(write_bitstream, (uint8_t*)&encoder_identifier, 0x4);
 
     uint16_t horizontal_size = SET_DATA16(param->horizontal);
-    setByte(&write_bitstream, (uint8_t*)&horizontal_size , 0x2);
+    setByte(write_bitstream, (uint8_t*)&horizontal_size , 0x2);
 
     uint16_t vertical_size = SET_DATA16(param->vertical);
-    setByte(&write_bitstream, (uint8_t*)&vertical_size, 0x2);
+    setByte(write_bitstream, (uint8_t*)&vertical_size, 0x2);
 
 
     uint8_t chroma_format;
@@ -192,69 +192,70 @@ void set_frame_header(struct encoder_param* param)
     } else {
         chroma_format = 0x2;
     }
-    setBit(&write_bitstream, chroma_format, 2);
+    setBit(write_bitstream, chroma_format, 2);
 
     uint8_t reserved1 = 0x0;
-    setBit(&write_bitstream, reserved1, 2);
+    setBit(write_bitstream, reserved1, 2);
 
     uint8_t interlace_mode = 0;
-    setBit(&write_bitstream, interlace_mode, 2);
+    setBit(write_bitstream, interlace_mode, 2);
 
     uint8_t reserved2 = 0x0;
-    setBit(&write_bitstream, reserved2, 2);
+    setBit(write_bitstream, reserved2, 2);
 
     uint8_t aspect_ratio_information = 0;
-    setBit(&write_bitstream, aspect_ratio_information, 4);
+    setBit(write_bitstream, aspect_ratio_information, 4);
 
     uint8_t frame_rate_code = 0;
-    setBit(&write_bitstream, frame_rate_code, 4);
+    setBit(write_bitstream, frame_rate_code, 4);
 
     uint8_t color_primaries = 0x0;
-    setByte(&write_bitstream, &color_primaries, 1);
+    setByte(write_bitstream, &color_primaries, 1);
 
     uint8_t transfer_characteristic = 0x0;
-    setByte(&write_bitstream, &transfer_characteristic , 1);
+    setByte(write_bitstream, &transfer_characteristic , 1);
 
     uint8_t matrix_coefficients = 0x2;
-    setByte(&write_bitstream, &matrix_coefficients, 1);
+    setByte(write_bitstream, &matrix_coefficients, 1);
 
 
     uint8_t reserved3 = 0x4;
-    setBit(&write_bitstream, reserved3 , 4);
+    setBit(write_bitstream, reserved3 , 4);
 
     //printf("1   %x %x\n", tmp_buf_byte_offset, tmp_buf[0x1b]);
     uint8_t alpha_channel_type = 0x0;
-    setBit(&write_bitstream, alpha_channel_type , 4);
+    setBit(write_bitstream, alpha_channel_type , 4);
 
     //printf("2   %x %x\n", tmp_buf_byte_offset, tmp_buf[0x1b]);
     uint8_t reserved4 = 0x0;
-    setByte(&write_bitstream, &reserved4 , 1);
+    setByte(write_bitstream, &reserved4 , 1);
     
     //printf("3   %x %x\n", tmp_buf_byte_offset, tmp_buf[0x1b]);
     uint8_t reserved5 = 0x0;
-    setBit(&write_bitstream, reserved5, 6);
+    setBit(write_bitstream, reserved5, 6);
     
     //printf("4   %x %x\n", tmp_buf_byte_offset, tmp_buf[0x1b]);
     uint8_t load_luma_quantization_matrix = 0x1;
-    setBit(&write_bitstream, load_luma_quantization_matrix, 1);
+    setBit(write_bitstream, load_luma_quantization_matrix, 1);
 
     //printf("5   %x %x\n", tmp_buf_byte_offset, tmp_buf[0x1b]);
 
     uint8_t load_chroma_quantization_matrix = 0x1;
-    setBit(&write_bitstream, load_chroma_quantization_matrix, 1);
+    setBit(write_bitstream, load_chroma_quantization_matrix, 1);
 
-    setByte(&write_bitstream, param->luma_matrix, MATRIX_NUM );
-    setByte(&write_bitstream, param->chroma_matrix, MATRIX_NUM );
+    setByte(write_bitstream, param->luma_matrix, MATRIX_NUM );
+    setByte(write_bitstream, param->chroma_matrix, MATRIX_NUM );
 
 
 }
 
 void setSliceTalbeFlush(uint16_t size, uint32_t offset) {
     uint16_t slice_size = SET_DATA16(size);
-    setByteInOffset(&write_bitstream, offset, (uint8_t*)&slice_size, 2);
+    setByteInOffset(write_bitstream, offset, (uint8_t*)&slice_size, 2);
     
 
 }
+#if 0
 void wait_write_bitstream(struct thread_param * param)
 {
 	int ret = pthread_mutex_lock(&param->write_bitstream_my_mutex);
@@ -395,7 +396,7 @@ void *thread_start_routin(void *arg)
 		//printf("wait_write_bitstream\n");
 		wait_write_bitstream(param);
 		//printf("start4 %p %d\n", slice_param[index].bitstream->bitstream_buffer, size*8);
-		setByte(&write_bitstream, slice_param[index].bitstream->bitstream_buffer, size);
+		setByte(write_bitstream, slice_param[index].bitstream->bitstream_buffer, size);
 		if (slice_param[index+j-1].end == true) {
 			//printf("start5 \n" );
 
@@ -436,7 +437,31 @@ void frame_end_wait(void) {
 	pthread_mutex_lock(&end_frame_mutex);
 }
 
+#endif
 
+#ifdef CUDA_ENCODER
+
+
+int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
+{
+	uint32_t mb_x_max = (slice_param->horizontal + 15) >>4;
+	int horizontal_slice_num = mb_x_max /slice_param->slice_size_in_mb;
+
+	int mb_x = slice_no % horizontal_slice_num;
+	return mb_x;
+}
+int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
+{
+	uint32_t mb_x_max = (slice_param->horizontal + 15) >>4;
+	int horizontal_slice_num = mb_x_max /slice_param->slice_size_in_mb;
+
+	int mb_y = slice_no / horizontal_slice_num;
+	return mb_y;
+}
+
+
+struct Slice_cuda h_slice_param_cuda;
+//uint8_t h_qscale_table_cuda[MAX_SLICE_NUM];
 
 void encode_slices(struct encoder_param * param)
 {
@@ -454,10 +479,275 @@ void encode_slices(struct encoder_param * param)
 
     /* write dummy slice size table */
     int32_t i;
-    uint32_t slice_size_table_offset = (getBitSize(&write_bitstream)) >> 3 ;
+    uint32_t slice_size_table_offset = (getBitSize(write_bitstream)) >> 3 ;
     for (i = 0; i < slice_num_max ; i++) {
         uint16_t slice_size = 0x0;
-        setByte(&write_bitstream, (uint8_t*)&slice_size, 2);
+        setByte(write_bitstream, (uint8_t*)&slice_size, 2);
+    }
+    slice_mb_count = param->slice_size_in_mb;
+    mb_x = 0;
+    mb_y = 0;
+
+	memcpy(h_slice_param_cuda.luma_matrix, param->luma_matrix, BLOCK_IN_PIXEL);
+    memcpy(h_slice_param_cuda.chroma_matrix, param->chroma_matrix, BLOCK_IN_PIXEL);
+    h_slice_param_cuda.slice_size_in_mb= param->slice_size_in_mb;
+    h_slice_param_cuda.horizontal= param->horizontal;
+    h_slice_param_cuda.vertical= param->vertical;
+    h_slice_param_cuda.format_444 = param->format_444;
+	struct Slice_cuda * c_slice_param_cuda;
+
+#ifndef HOST_ONLY
+	cudaError_t err;
+	err = cudaMalloc(&c_slice_param_cuda, sizeof(struct Slice_cuda));
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+	cudaError_t err = cudaMemcpy(c_slice_param_cuda, &h_slice_param_cuda, sizeof(struct Slice_cuda), cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_slice_param_cuda = (struct Slice_cuda *)malloc(sizeof(struct Slice_cuda));
+	if (c_slice_param_cuda == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+	memcpy(c_slice_param_cuda, &h_slice_param_cuda, sizeof(struct Slice_cuda));
+
+#endif
+
+	uint8_t *c_qscale_table;
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_qscale_table, sizeof(uint8_t) * BLOCK_IN_PIXEL);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+	err = cudaMemcpy(c_qscale_table, param->qscale_table, MAX_SLICE_NUM);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_qscale_table = (uint8_t*)malloc(sizeof(uint8_t) * BLOCK_IN_PIXEL);
+	if (c_qscale_table == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+	memcpy(c_qscale_table, param->qscale_table, slice_num_max);
+#endif
+
+	uint16_t *c_y_data;
+	int y_size = param->horizontal * param->vertical * sizeof(uint16_t);
+#ifndef HOST_ONLY
+
+	err = cudaMalloc(&c_y_data, y_size);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+	err = cudaMemcpy(c_y_data, param->y_data, y_size, cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_y_data = malloc(y_size);
+	if (c_y_data == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+	memcpy(c_y_data, param->y_data, y_size);
+#endif
+
+	uint16_t *c_cb_data;
+	int cb_size;
+	if (param->format_444 == true) {
+		cb_size = y_size;
+	} else {
+		cb_size = y_size >> 2;
+	}
+
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_cb_data, cb_size);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+	err = cudaMemcpy(c_cb_data, param->cb_data, cb_size, cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_cb_data = malloc(cb_size);
+	if (c_cb_data == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+	memcpy(c_cb_data, param->cb_data, cb_size);
+#endif
+
+	uint16_t *c_cr_data;
+	int cr_size = cb_size;
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_cr_data, cr_size);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+	err = cudaMemcpy(c_cr_data, param->cb_data, cr_size, cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_cr_data = malloc(cr_size);
+	if (c_cr_data == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+	memcpy(c_cr_data, param->cr_data, cr_size);
+#endif
+
+	struct bitstream *c_bitstream;
+	int bitstream_size = (sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * slice_num_max;
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_bitstream, bitstream_size);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_bitstream = malloc(bitstream_size);
+	if (c_bitstream == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+#endif
+
+
+	uint16_t *c_slice_size_table;
+	int slice_size_table_size = slice_num_max * sizeof(uint16_t);
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_slice_size_table, slice_size_table_size);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_slice_size_table = malloc(slice_size_table_size);
+	if (c_slice_size_table == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+
+#endif
+	int16_t *c_working_buffer;
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_working_buffer, MAX_SLICE_DATA*2);
+	if (err != cudaSuccess) {
+		printf("cudaMemcpy error %d %d", __LINE__, err);
+	}
+#else
+	c_working_buffer = malloc(MAX_SLICE_DATA*2);
+	if (c_working_buffer == NULL ) {
+		printf("malloc error %d", __LINE__);
+	}
+
+#endif
+
+	//int i;
+	for(i = 0; i <slice_num_max;i++)  {
+		encode_slice(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cb_data, c_bitstream, c_slice_size_table, c_working_buffer);
+	}
+
+
+#if 0
+    for (i = 0; i < slice_num_max ; i++) {
+
+        while ((mb_x_max - mb_x) < slice_mb_count)
+            slice_mb_count >>=1;
+
+		int thread_no = getThreadNumForSliceNo(i);
+        slice_param[i].slice_no = i;
+        slice_param[i].luma_matrix = param->luma_matrix;
+        slice_param[i].chroma_matrix = param->chroma_matrix;
+        slice_param[i].qscale = param->qscale_table[i];
+        slice_param[i].slice_size_in_mb= param->slice_size_in_mb;
+        slice_param[i].horizontal= param->horizontal;
+        slice_param[i].vertical= param->vertical;
+        slice_param[i].y_data= (uint16_t*)param->y_data;
+        slice_param[i].cb_data= (uint16_t*)param->cb_data;
+        slice_param[i].cr_data= (uint16_t*)param->cr_data;
+        slice_param[i].mb_x = mb_x;
+        slice_param[i].mb_y = mb_y;
+        slice_param[i].format_444 = param->format_444;
+		//printf("Threadno %d %d\n",i , thread_no);
+	    slice_param[i].bitstream = &slice_bitstream[thread_no];
+	    slice_param[i].bitstream->bitstream_buffer = slice_bistream_buffer[thread_no];
+		if (i==510) {
+			//printf("%p %d\n", slice_bistream_buffer[thread_no], thread_no);
+		}
+		slice_param[i].working_buffer = params[thread_no].y_slice;
+
+
+	   if (i == (slice_num_max -1)) {
+		   //printf("end %d\n", i);
+			slice_param[i].end = true;
+		} else {
+		   //printf("no end %d\n", i);
+			slice_param[i].end = false;
+		}
+
+        mb_x += slice_mb_count;
+        if (mb_x == mb_x_max ) {
+            slice_mb_count = param->slice_size_in_mb;
+            mb_x = 0;
+            mb_y++;
+        }
+		
+    }
+#endif
+
+#if 0
+	//printf("start thread %d %d\n", __LINE__, slice_num_max);
+#if 1
+	int j;
+	for(j=0;j<MAX_THREAD_NUM;j++) {
+		pthread_mutex_lock(&slice_num_thread_mutex[j]);
+		slice_num_thread[j] = getSliceNumForThread(j);
+		//printf("num %d %d\n", slice_num_thread[j], j);
+		pthread_cond_signal(&slice_num_thread_cond[j]);
+		pthread_mutex_unlock(&slice_num_thread_mutex[j]);
+	}
+#endif
+	struct timeval startTime, endTime;
+
+	gettimeofday(&startTime,NULL);
+//	printf("s %d.%d\n", (int)startTime.tv_sec, (int)startTime.tv_usec);
+	start_write_bitstream();
+
+
+	frame_end_wait();
+	gettimeofday(&endTime,NULL);
+	//printf("e %d.%d\n", (int)endTime.tv_sec, (int)endTime.tv_usec);
+#ifdef TIME_SCALE
+	printf("end %d\n", (int)(endTime.tv_sec - startTime.tv_sec));
+#endif
+#endif
+
+
+
+    for (i = 0; i < slice_num_max ; i++) {
+        setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
+    }
+
+}
+#else
+void encode_slices(struct encoder_param * param)
+{
+    uint32_t mb_x;
+    uint32_t mb_y;
+    uint32_t mb_x_max;
+    mb_x_max = (param->horizontal+ 15 ) >> 4;
+
+
+    slice_num_max = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
+
+    int32_t slice_mb_count = param->slice_size_in_mb;
+    mb_x = 0;
+    mb_y = 0;
+
+    /* write dummy slice size table */
+    int32_t i;
+    uint32_t slice_size_table_offset = (getBitSize(write_bitstream)) >> 3 ;
+    for (i = 0; i < slice_num_max ; i++) {
+        uint16_t slice_size = 0x0;
+        setByte(write_bitstream, (uint8_t*)&slice_size, 2);
     }
     slice_mb_count = param->slice_size_in_mb;
     mb_x = 0;
@@ -535,45 +825,50 @@ void encode_slices(struct encoder_param * param)
     }
 
 }
-
+#endif
 
 uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 {
 
-	write_bitstream.bitstream_buffer = bitstream_buffer;
-    initBitStream(&write_bitstream);
+	write_bitstream = (struct bitstream*)malloc(sizeof(struct bitstream) + MAX_BITSTREAM_SIZE);
+	if (write_bitstream == NULL ) {
+		printf("error malloc %d\n", __LINE__);
+		return NULL;
+	}
+//	write_bitstream.bitstream_buffer = bitstream_buffer;
+    initBitStream(write_bitstream);
 
-    uint32_t frame_size_offset = getBitSize(&write_bitstream) >> 3 ;
+    uint32_t frame_size_offset = getBitSize(write_bitstream) >> 3 ;
     uint32_t frame_size = SET_DATA32(0x0); 
-    setByte(&write_bitstream, (uint8_t*)&frame_size,4);
+    setByte(write_bitstream, (uint8_t*)&frame_size,4);
 
     uint32_t frame_identifier = SET_DATA32(0x69637066); //icpf
 
 
-    setByte(&write_bitstream, (uint8_t*)&frame_identifier,4);
+    setByte(write_bitstream, (uint8_t*)&frame_identifier,4);
 
     set_frame_header(param);
-    uint32_t picture_size_offset = (getBitSize(&write_bitstream)) >> 3 ;
+    uint32_t picture_size_offset = (getBitSize(write_bitstream)) >> 3 ;
 
     set_picture_header(param);
 
     encode_slices(param);
-    uint32_t picture_end = (getBitSize(&write_bitstream)) >>  3 ;
+    uint32_t picture_end = (getBitSize(write_bitstream)) >>  3 ;
 
     uint32_t tmp  = picture_end - picture_size_offset;
     uint32_t picture_size = SET_DATA32(tmp);
 
-    setByteInOffset(&write_bitstream, picture_size_offset_, (uint8_t*)&picture_size, 4);
+    setByteInOffset(write_bitstream, picture_size_offset_, (uint8_t*)&picture_size, 4);
 
 
-    uint8_t *ptr = getBitStream(&write_bitstream, encode_frame_size);
+    uint8_t *ptr = getBitStream(write_bitstream, encode_frame_size);
     uint32_t frame_size_data = SET_DATA32(*encode_frame_size);
-    setByteInOffset(&write_bitstream, frame_size_offset, (uint8_t*)&frame_size_data , 4);
+    setByteInOffset(write_bitstream, frame_size_offset, (uint8_t*)&frame_size_data , 4);
     return ptr;
 }
 
 
-
+#if 0
 int encoder_thread_init(void)
 {
 	int i,ret;
@@ -633,7 +928,7 @@ int encoder_thread_init(void)
 
 	return 0;
 }
-
+#endif
 
 
 void encoder_init(void)
@@ -642,12 +937,13 @@ void encoder_init(void)
 #ifdef PRE_CALC_COS
 	dct_init();
 #endif
+#if 0
 	int ret = encoder_thread_init();
 	if (ret != 0) {
 		printf("%d", __LINE__);
 		return;
 	}
-
+#endif
 }
 
 

@@ -9,7 +9,7 @@
 #define DEL_MULTIPLY
 
 
-#define MAX_THREAD_NUM	(12)
+#define MAX_THREAD_NUM	(1)
 
 #define MAX_SEQ_NUMBER 	(100)
 
@@ -18,5 +18,9 @@
 //#define FIRST_DCT_A
 
 //#define TIME_SCALE
+
+#define		CUDA_ENCODER
+
+#define		HOST_ONLY //for debug
 
 #endif

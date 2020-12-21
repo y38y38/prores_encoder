@@ -22,16 +22,27 @@
 
 
 //#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024) //1K
-#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024*10) //1M
+//#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024*10) //1M
+#define MAX_SLICE_BITSTREAM_SIZE	(1024*1024*100) //100K
+#define MAX_BITSTREAM_SIZE	(1073741824) //1M
 //static uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];
 
-
+#ifndef CUDA_ENCODER
 struct bitstream {
 	uint8_t *tmp_buf;
 	uint32_t tmp_buf_byte_offset;
 	uint32_t tmp_buf_bit_offset;
 	uint8_t *bitstream_buffer;
 };
+#else
+struct bitstream {
+	uint8_t *tmp_buf;
+	uint32_t tmp_buf_byte_offset;
+	uint32_t tmp_buf_bit_offset;
+	uint8_t bitstream_buffer[];
+};
+
+#endif
 
 
 void initBitStream(struct bitstream *write_bitstream);

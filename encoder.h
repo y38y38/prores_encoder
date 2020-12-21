@@ -16,6 +16,10 @@
 #define MAX_SLICE_NUM	(131072)
 
 
+#define	MAX_HORIZONTAL	(8192)
+#define	MAX_VERTICAL	(4096)
+#define MAX_PIXEL		(33554432) //MAX_HORIZONTAL * MAX_VERTICAL
+
 
 struct encoder_param {
     uint8_t *luma_matrix;
