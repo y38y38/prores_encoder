@@ -244,6 +244,7 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
     setByteInOffset(bitstream_ptr, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize(bitstream_ptr);
 	slice_size_table[slice_no] = ((current_offset - start_offset)/8);
+	printf("size = 0x%x\n", ((current_offset - start_offset)/8));
     return;
 }
 
