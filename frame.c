@@ -642,9 +642,8 @@ void encode_slices(struct encoder_param * param)
 
 	//int i;
 	for(i = 0; i <slice_num_max;i++)  {
-		encode_slice(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cb_data, c_bitstream, c_slice_size_table, c_working_buffer);
+		encode_slice(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer);
 	}
-
 
 #if 0
     for (i = 0; i < slice_num_max ; i++) {
@@ -721,9 +720,10 @@ void encode_slices(struct encoder_param * param)
 #endif
 
 
-
+	memcpy(slice_size_table, c_slice_size_table, slice_size_table_size);
     for (i = 0; i < slice_num_max ; i++) {
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
+		setByte(write_bitstream, c_bitstream[i].bitstream_buffer, slice_size_table[i]);
     }
 
 }
