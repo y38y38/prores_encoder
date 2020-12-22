@@ -203,7 +203,7 @@ uint16_t encode_slice(struct Slice *param)
     size = 0;
     uint16_t coded_size_of_cb_data = SET_DATA16(size);
     setByte(param->bitstream, (uint8_t*)&coded_size_of_cb_data , 2);
-
+//	printf("offset=0x%x\n", code_size_of_cb_data_offset);
 
 	getYver2((uint16_t*)param->working_buffer, param->y_data, param->mb_x,param->mb_y,param->slice_size_in_mb, param->horizontal, param->vertical);
 	size = (uint16_t)encode_slice_component(param, param->working_buffer, param->luma_matrix, MB_IN_BLOCK);
@@ -232,7 +232,7 @@ uint16_t encode_slice(struct Slice *param)
     setByteInOffset(param->bitstream, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
     setByteInOffset(param->bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize(param->bitstream);
-
+	printf("size=0x%x\n",  ((current_offset - start_offset)/8));
     return ((current_offset - start_offset)/8);
 }
 
