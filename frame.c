@@ -31,7 +31,6 @@
 #include "encoder.h"
 
 
-#define MAX_SLICE_DATA	(2048)
 
 struct thread_param {
 	int thread_no;
@@ -447,7 +446,7 @@ int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
 	uint32_t mb_x_max = (slice_param->horizontal + 15) >>4;
 	int horizontal_slice_num = mb_x_max /slice_param->slice_size_in_mb;
 
-	int mb_x = slice_no % horizontal_slice_num;
+	int mb_x = (slice_no % horizontal_slice_num) * slice_param->slice_size_in_mb;
 	return mb_x;
 }
 int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
@@ -517,16 +516,16 @@ void encode_slices(struct encoder_param * param)
 
 	uint8_t *c_qscale_table;
 #ifndef HOST_ONLY
-	err = cudaMalloc(&c_qscale_table, sizeof(uint8_t) * BLOCK_IN_PIXEL);
+	err = cudaMalloc(&c_qscale_table, sizeof(uint8_t) * slice_num_max);
 	if (err != cudaSuccess) {
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
-	err = cudaMemcpy(c_qscale_table, param->qscale_table, MAX_SLICE_NUM);
+	err = cudaMemcpy(c_qscale_table, param->qscale_table, slice_num_max);
 	if (err != cudaSuccess) {
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_qscale_table = (uint8_t*)malloc(sizeof(uint8_t) * BLOCK_IN_PIXEL);
+	c_qscale_table = (uint8_t*)malloc(sizeof(uint8_t) * slice_num_max);
 	if (c_qscale_table == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -558,7 +557,7 @@ void encode_slices(struct encoder_param * param)
 	if (param->format_444 == true) {
 		cb_size = y_size;
 	} else {
-		cb_size = y_size >> 2;
+		cb_size = y_size >> 1;
 	}
 
 #ifndef HOST_ONLY
@@ -605,10 +604,13 @@ void encode_slices(struct encoder_param * param)
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
+	//printf("malloc size%d\n", bitstream_size);
 	c_bitstream = malloc(bitstream_size);
 	if (c_bitstream == NULL ) {
 		printf("malloc error %d", __LINE__);
+		return 0;
 	}
+	memset(c_bitstream, 0x0, bitstream_size);
 #endif
 
 
@@ -626,14 +628,16 @@ void encode_slices(struct encoder_param * param)
 	}
 
 #endif
-	int16_t *c_working_buffer;
+
+	int16_t *c_working_buffer;//thread分のバッファを持つ必要あり。
+	int working_buffer_size = (MAX_SLICE_DATA * 2) * slice_num_max;
 #ifndef HOST_ONLY
-	err = cudaMalloc(&c_working_buffer, MAX_SLICE_DATA*2);
+	err = cudaMalloc(&c_working_buffer, working_buffer_size);
 	if (err != cudaSuccess) {
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_working_buffer = malloc(MAX_SLICE_DATA*2);
+	c_working_buffer = malloc(working_buffer_size);
 	if (c_working_buffer == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -722,8 +726,16 @@ void encode_slices(struct encoder_param * param)
 
 	memcpy(slice_size_table, c_slice_size_table, slice_size_table_size);
     for (i = 0; i < slice_num_max ; i++) {
+		//printf("size=0x%x %x\n", slice_size_table[i], slice_size_table_size);
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
-		setByte(write_bitstream, c_bitstream[i].bitstream_buffer, slice_size_table[i]);
+		for(int j=0;j<128;j++) {
+			//printf("%x ", c_bitstream[i].bitstream_buffer[j]);
+		}
+		//printf("\n%x\n", c_bitstream[i].bitstream_buffer);
+		uint8_t *ptr = c_bitstream;
+		struct bitstream * bptr = (struct bitstream*)(ptr + ((sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * i));
+
+		setByte(write_bitstream, bptr->bitstream_buffer, slice_size_table[i]);
     }
 
 }

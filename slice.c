@@ -183,10 +183,12 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
 
 //void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bistream *bitstream, uint16_t* slice_size_table, int16_t *buffer)
 {
-	struct bitstream *bitstream_ptr =&bitstream[slice_no];
-//	struct bitstream *bitstream_ptr = &bitstream_ptr[slice_no];
-	int16_t *working_buffer = &buffer[slice_no];
+	uint8_t *ptr = (uint8_t*)bitstream;
 
+	struct bitstream *bitstream_ptr = (struct bitstream *)(ptr + ((sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * slice_no));
+//	struct bitstream *bitstream_ptr = &bitstream_ptr[slice_no];
+	int16_t *working_buffer = (buffer + (slice_no * MAX_SLICE_DATA ));
+	//printf("%p\n",bitstream_ptr);
 	initBitStream(bitstream_ptr);
 
     uint32_t start_offset= getBitSize(bitstream_ptr);
@@ -195,56 +197,75 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
     uint8_t slice_header_size = 6;
 
     setBit(bitstream_ptr, slice_header_size , 5);
-
+	//printf("%d %d\n", __LINE__, getBitSize(bitstream_ptr)/8);
     uint8_t reserve =0x0;
     setBit(bitstream_ptr, reserve, 3);
 
     setByte(bitstream_ptr, &qscale_table[slice_no], 1);
+	//printf("%d %d\n", __LINE__, getBitSize(bitstream_ptr)/8);
 
     uint32_t code_size_of_y_data_offset = getBitSize(bitstream_ptr);
     code_size_of_y_data_offset = code_size_of_y_data_offset >> 3;
     uint16_t size = 0;
     uint16_t coded_size_of_y_data = SET_DATA16(size);
     setByte(bitstream_ptr, (uint8_t*)&coded_size_of_y_data , 2);
+	//printf("%d %d\n", __LINE__, getBitSize(bitstream_ptr)/8);
 
     uint32_t code_size_of_cb_data_offset = getBitSize(bitstream_ptr);
     code_size_of_cb_data_offset = code_size_of_cb_data_offset >> 3 ;
     size = 0;
     uint16_t coded_size_of_cb_data = SET_DATA16(size);
     setByte(bitstream_ptr, (uint8_t*)&coded_size_of_cb_data , 2);
+	//printf("%d %d\n", __LINE__, getBitSize(bitstream_ptr)/8);
 
 	int mb_x = mbXFormSliceNo(slice_param, slice_no);
 	int mb_y = mbYFormSliceNo(slice_param, slice_no);
-
+	//printf(" x %x y %x ", mb_x, mb_y);
 	getYver2((uint16_t*)working_buffer, y_data, mb_x, mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-	size = (uint16_t)encode_slice_component(slice_param, working_buffer, slice_param->luma_matrix, MB_IN_BLOCK,bitstream, qscale_table[slice_no]);
+	size = (uint16_t)encode_slice_component(slice_param, working_buffer, slice_param->luma_matrix, MB_IN_BLOCK,bitstream_ptr, qscale_table[slice_no]);
     uint16_t y_size  = SET_DATA16(size);
-
+	//printf("ysize=0x%x\n", y_size);
     uint16_t cb_size;
     if (slice_param->format_444 == true) {
 
 		getYver2((uint16_t*)working_buffer, cb_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream_ptr,qscale_table[slice_no]);
         cb_size = SET_DATA16(size);
 
 
 		getYver2((uint16_t*)working_buffer, cr_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream_ptr,qscale_table[slice_no]);
 
     } else {
+		
 		getCver2((uint16_t*)working_buffer, cb_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream,qscale_table[slice_no]);
+#if 0
+		for(int i=0;i<128;i++) {
+			printf("%x ", cb_data[i]);
+		}
+		printf("%d %d \n\n", slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
+		for(int i=0;i<128;i++) {
+			printf("%x ", working_buffer[i]);
+		}
+#endif
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream_ptr,qscale_table[slice_no]);
         cb_size = SET_DATA16(size);
+		//printf("cbsize=0x%x %d %d\n", cb_size, mb_x,mb_y);
 
 		getCver2((uint16_t*)working_buffer, cr_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream_ptr,qscale_table[slice_no]);
     }
 
     setByteInOffset(bitstream_ptr, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
     setByteInOffset(bitstream_ptr, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize(bitstream_ptr);
 	slice_size_table[slice_no] = ((current_offset - start_offset)/8);
-	printf("size = 0x%x\n", ((current_offset - start_offset)/8));
+	//printf("\n%x\n",bitstream_ptr->bitstream_buffer);
+	//	for(int j=0;j<128;j++) {
+	//		printf("%x ", bitstream_ptr->bitstream_buffer[j]);
+	//	}
+
+	//printf("size = 0x%x\n", ((current_offset - start_offset)/8));
     return;
 }
 

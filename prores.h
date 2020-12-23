@@ -28,5 +28,7 @@
 #define BLOCK_HORIZONTAL_IN_PIXEL     (8)
 #define BLOCK_VERTIVAL_IN_PIXEL       (8)
 
+#define MAX_SLICE_DATA	(2048)
+
 
 #endif
