@@ -142,7 +142,7 @@ static void pre_dct(int16_t *block, int32_t  block_num)
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 
-static uint32_t encode_slice_component(struct Slice_cuda *param, int16_t* pixel, uint8_t *matrix, int mb_in_block, struct bitstream *bitstream, uint8_t qscale)
+static uint32_t encode_slice_component(struct Slice_cuda *param, int16_t* pixel, uint8_t *matrix, int mb_in_block, struct bitstream *bitstream, uint8_t qscale, double *kc_value)
 {
     uint32_t start_offset= getBitSize(bitstream);
 
@@ -150,7 +150,7 @@ static uint32_t encode_slice_component(struct Slice_cuda *param, int16_t* pixel,
 
     int32_t i;
     for (i = 0;i< param->slice_size_in_mb * mb_in_block;i++) {
-        dct_block(&pixel[i* BLOCK_IN_PIXEL]);
+        dct_block(&pixel[i* BLOCK_IN_PIXEL],kc_value);
     }
     pre_quant(pixel, param->slice_size_in_mb * mb_in_block);
     encode_qt(pixel, param->chroma_matrix, param->slice_size_in_mb * mb_in_block);
@@ -179,7 +179,7 @@ static uint8_t qScale2quantization_index(uint8_t qscale)
 extern int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no);
 extern int mbYFormSliceNo(struct Slice_cuda* slice_param,int slice_no);
 
-void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bitstream *bitstream, uint16_t* slice_size_table, int16_t *buffer)
+void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bitstream *bitstream, uint16_t* slice_size_table, int16_t *buffer,  double * kc_value)
 
 //void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bistream *bitstream, uint16_t* slice_size_table, int16_t *buffer)
 {
@@ -222,19 +222,19 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
 	int mb_y = mbYFormSliceNo(slice_param, slice_no);
 	//printf(" x %x y %x ", mb_x, mb_y);
 	getYver2((uint16_t*)working_buffer, y_data, mb_x, mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-	size = (uint16_t)encode_slice_component(slice_param, working_buffer, slice_param->luma_matrix, MB_IN_BLOCK,bitstream_ptr, qscale_table[slice_no]);
+	size = (uint16_t)encode_slice_component(slice_param, working_buffer, slice_param->luma_matrix, MB_IN_BLOCK,bitstream_ptr, qscale_table[slice_no], kc_value);
     uint16_t y_size  = SET_DATA16(size);
 	//printf("ysize=0x%x\n", y_size);
     uint16_t cb_size;
     if (slice_param->format_444 == true) {
 
 		getYver2((uint16_t*)working_buffer, cb_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream_ptr,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream_ptr,qscale_table[slice_no], kc_value);
         cb_size = SET_DATA16(size);
 
 
 		getYver2((uint16_t*)working_buffer, cr_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream_ptr,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_IN_BLOCK, bitstream_ptr,qscale_table[slice_no], kc_value);
 
     } else {
 		
@@ -248,12 +248,12 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
 			printf("%x ", working_buffer[i]);
 		}
 #endif
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream_ptr,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream_ptr,qscale_table[slice_no], kc_value);
         cb_size = SET_DATA16(size);
 		//printf("cbsize=0x%x %d %d\n", cb_size, mb_x,mb_y);
 
 		getCver2((uint16_t*)working_buffer, cr_data, mb_x,mb_y,slice_param->slice_size_in_mb, slice_param->horizontal, slice_param->vertical);
-		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream_ptr,qscale_table[slice_no]);
+		size = (uint16_t)encode_slice_component(slice_param, (int16_t*)working_buffer, slice_param->chroma_matrix, MB_422C_IN_BLCCK, bitstream_ptr,qscale_table[slice_no], kc_value);
     }
 
     setByteInOffset(bitstream_ptr, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
@@ -268,4 +268,5 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
 	//printf("size = 0x%x\n", ((current_offset - start_offset)/8));
     return;
 }
+
 

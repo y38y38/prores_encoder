@@ -262,6 +262,8 @@ int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
 struct Slice_cuda h_slice_param_cuda;
 //uint8_t h_qscale_table_cuda[MAX_SLICE_NUM];
 
+double h_kc_value[KC_INDEX_MAX];
+
 void encode_slices(struct encoder_param * param)
 {
     slice_num_max = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
@@ -430,9 +432,26 @@ void encode_slices(struct encoder_param * param)
 
 #endif
 
+
+	double *c_kc_value;
+	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
+#ifndef HOST_ONLY
+	err = cudaMalloc(&c_kc_value, kc_value_size);
+	if (err != cudaSuccess) {
+		printf("cudaMalloc error %d %d", __LINE__, err);
+	}
+	cudaMemcpy(c_kc_value, h_kc_value, kc_value_size, cudaMemcpyHostToDevice);
+#else
+	c_kc_value = (double*)malloc(kc_value_size);
+	if (c_kc_value == NULL ) {
+		printf("cudaMalloc error %d", __LINE__);
+	}
+	memcpy(c_kc_value, h_kc_value, kc_value_size);
+#endif	
+
 	//int i;
 	for(i = 0; i <slice_num_max;i++)  {
-		encode_slice(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer);
+		encode_slice(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer,c_kc_value);
 	}
 
 
@@ -500,7 +519,7 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 void encoder_init(void)
 {
 	vlc_init();
-	dct_init();
+	dct_init(h_kc_value);
 }
 
 
