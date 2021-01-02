@@ -545,7 +545,7 @@ void encode_slices(struct encoder_param * param)
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_y_data = malloc(y_size);
+	c_y_data = (uint16_t*)malloc(y_size);
 	if (c_y_data == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -570,7 +570,7 @@ void encode_slices(struct encoder_param * param)
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_cb_data = malloc(cb_size);
+	c_cb_data = (uint16_t*)malloc(cb_size);
 	if (c_cb_data == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -589,7 +589,7 @@ void encode_slices(struct encoder_param * param)
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_cr_data = malloc(cr_size);
+	c_cr_data = (uint16_t*)malloc(cr_size);
 	if (c_cr_data == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -605,10 +605,9 @@ void encode_slices(struct encoder_param * param)
 	}
 #else
 	//printf("malloc size%d\n", bitstream_size);
-	c_bitstream = malloc(bitstream_size);
+	c_bitstream = (struct bitstream*)malloc(bitstream_size);
 	if (c_bitstream == NULL ) {
 		printf("malloc error %d", __LINE__);
-		return 0;
 	}
 	memset(c_bitstream, 0x0, bitstream_size);
 #endif
@@ -622,7 +621,7 @@ void encode_slices(struct encoder_param * param)
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_slice_size_table = malloc(slice_size_table_size);
+	c_slice_size_table = (uint16_t*)malloc(slice_size_table_size);
 	if (c_slice_size_table == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -637,7 +636,7 @@ void encode_slices(struct encoder_param * param)
 		printf("cudaMemcpy error %d %d", __LINE__, err);
 	}
 #else
-	c_working_buffer = malloc(working_buffer_size);
+	c_working_buffer = (int16_t*)malloc(working_buffer_size);
 	if (c_working_buffer == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
@@ -732,7 +731,7 @@ void encode_slices(struct encoder_param * param)
 			//printf("%x ", c_bitstream[i].bitstream_buffer[j]);
 		}
 		//printf("\n%x\n", c_bitstream[i].bitstream_buffer);
-		uint8_t *ptr = c_bitstream;
+		uint8_t *ptr = (uint8_t*)c_bitstream;
 		struct bitstream * bptr = (struct bitstream*)(ptr + ((sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * i));
 
 		setByte(write_bitstream, bptr->bitstream_buffer, slice_size_table[i]);

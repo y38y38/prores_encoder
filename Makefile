@@ -6,35 +6,35 @@
 #
 all:encoder
 
-CC=gcc
+CC=nvcc
 
 CFLAGS=  -g -O2 -I./
 
 encoder:frame.o   dct.o main.o bitstream.o slice.o vlc.o debug.o
 	${CC} -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  vlc.o slice.o  debug.o -lm -lpthread
 
-frame.o:frame.c
-	${CC} ${CFLAGS} -c frame.c -lm
+frame.o:frame.cu
+	${CC} ${CFLAGS} -c frame.cu -lm
 
 
-dct.o:dct.c
-	${CC} ${CFLAGS} -c dct.c
+dct.o:dct.cu
+	${CC} ${CFLAGS} -c dct.cu
 
-bitstream.o:bitstream.c
-	${CC} ${CFLAGS} -c bitstream.c
+bitstream.o:bitstream.cu
+	${CC} ${CFLAGS} -c bitstream.cu
 
-vlc.o:vlc.c
-	${CC} ${CFLAGS} -c vlc.c
+vlc.o:vlc.cu
+	${CC} ${CFLAGS} -c vlc.cu
 
-debug.o:debug.c
-	${CC} ${CFLAGS} -c debug.c
+debug.o:debug.cu
+	${CC} ${CFLAGS} -c debug.cu
 
 
-slice.o:slice.c
-	${CC} ${CFLAGS} -c slice.c
+slice.o:slice.cu
+	${CC} ${CFLAGS} -c slice.cu
 
-main.o:main.c
-	${CC} ${CFLAGS} -c main.c
+main.o:main.cu
+	${CC} ${CFLAGS} -c main.cu
 
 
 clean:
