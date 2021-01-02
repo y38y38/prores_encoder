@@ -518,7 +518,7 @@ uint8_t *encode_frame(struct encoder_param* param, uint32_t *encode_frame_size)
 
 void encoder_init(void)
 {
-	vlc_init();
+	//vlc_init();
 	dct_init(h_kc_value);
 }
 

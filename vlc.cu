@@ -171,7 +171,7 @@ void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks, str
     }
     return ;
 }
-
+#if 0
 //from figure 4
 static const uint8_t block_pattern_scan_table[64] = {
      0,  1,  4,  5, 16, 17, 21, 22,
@@ -183,7 +183,18 @@ static const uint8_t block_pattern_scan_table[64] = {
     35, 40, 43, 48, 51, 56, 59, 61,
     41, 42, 49, 50, 57, 58, 62, 63,
 };
-static uint8_t block_pattern_scan_read_order_table[64];
+#endif
+
+static uint8_t block_pattern_scan_read_order_table[64] = {
+	0,	1,	8,	9,	2,	3, 10, 11,
+	16,17, 24, 25, 18, 19, 26, 27,
+	4,  5, 12, 20, 13, 6,   7, 14,
+	21,28,29,22,15,23,30,31,
+	32,33,40,48,41,34,35,42,
+	49,56,57,50,43,36,37,44,
+	51,58,59,52,45,38,39,46,
+	53,60,61,54,47,55,62,63,
+};
 
 
 uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
@@ -227,13 +238,14 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks,
     }
     return 0;
 }
-
+#if 0
 void vlc_init(void)
 {
     int32_t i,j;
     for(i=0;i<MATRIX_NUM ;i++) {
         for(j=0;j<MATRIX_NUM ;j++) {
             if (i == block_pattern_scan_table[j]  ) {
+				printf("%d,",j);
                 block_pattern_scan_read_order_table[i] = j;
                 break;
             }
@@ -241,3 +253,4 @@ void vlc_init(void)
     }
 
 }
+#endif
