@@ -231,8 +231,6 @@ int32_t ComplmentVideoFrame(uint16_t *data, int32_t horizontal, int32_t vertical
     return 0;
 }
 
-#define MAX_HORIZONTAL (8192)
-#define MAX_VERTICAL   (4320)
 /*  2 →１６bit */
 #define MAX_DATA_SIZE ((MAX_HORIZONTAL * MAX_VERTICAL) * 2)
 

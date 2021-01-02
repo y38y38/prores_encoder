@@ -8,7 +8,6 @@
  **/
 #include <stdio.h>
 #include <stdint.h>
-//#include <string.h>
 #include <math.h>
 
 #include "config.h"
@@ -140,12 +139,7 @@ int dct_block(int16_t *block) {
 		    for(y=0;y<MAX_Y;y++) {
 
         		for(x=0;x<MAX_X;x++) {
-#ifdef PRE_CALC_COS
             		value += block[(y * 8) + x] *  kc_value[x][y][h][v];
-#else
-            		double kc = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
-            		value += block[(y * 8) + x] *  kc;
-#endif
         		}
     		}
     		if ( h == 0) {
