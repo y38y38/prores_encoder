@@ -32,15 +32,6 @@
 
 
 
-struct thread_param {
-	int thread_no;
-	pthread_mutex_t  write_bitstream_my_mutex;
-	pthread_mutex_t  *write_bitstream_next_mutex;
-	int16_t y_slice[MAX_SLICE_DATA];
-};
-
-
-
 #define MACRO_BLOCK_Y_HORIZONTAL  (16)
 #define MACRO_BLOCK_Y_VERTICAL    (16)
 
@@ -52,20 +43,11 @@ struct thread_param {
 
 
 static struct bitstream *write_bitstream;
-//static uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];
 
-
-
-//void start_write_bitstream(void);
-//void frame_end_wait(void);
 
 static uint16_t slice_size_table[MAX_SLICE_NUM];
 
-
-
 uint32_t slice_num_max;
-
-
 
 static uint32_t picture_size_offset_ = 0;
 

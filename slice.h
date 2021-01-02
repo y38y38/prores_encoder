@@ -16,27 +16,7 @@
 #include "prores.h"
 #include "encoder.h"
 
-struct Slice {
-	int slice_no;
-    uint8_t *luma_matrix;
-    uint8_t *chroma_matrix;
-    uint8_t qscale;
-    uint32_t slice_size_in_mb;
-    uint32_t horizontal;
-    uint32_t vertical;
-    uint16_t *y_data;//original data
-    uint16_t *cb_data;//original data
-    uint16_t *cr_data;//original data
-    uint32_t mb_x;
-    uint32_t mb_y;
-    bool format_444;
-	bool end;
-	struct bitstream *bitstream;
-	int16_t *working_buffer;//working buffer 
 
-};
-
-#ifdef CUDA_ENCODER
 struct Slice_cuda {
 	int slice_no;
     uint8_t luma_matrix[BLOCK_IN_PIXEL];
@@ -48,7 +28,6 @@ struct Slice_cuda {
 	bool end;
 };
 
-#endif
 
 void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bitstream *stream, uint16_t* slice_size_table, int16_t *buffer, double* kc_value);
 
