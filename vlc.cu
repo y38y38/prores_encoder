@@ -17,38 +17,41 @@
 #include "vlc.h"
 
 #define MAX_COEFFICIENT_NUM_PER_BLOCK (64)
-
+__device__
 static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
     int32_t q  = val >> k;
 
     if (k ==0) {
         if (q != 0) {
-            setBit(bitstream, 0,q);
+            setBit_cuda(bitstream, 0,q);
         }
-        setBit(bitstream, 1,1);
+        setBit_cuda(bitstream, 1,1);
     } else {
         uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
         uint32_t r = val & (tmp -1 );
 
         uint32_t codeword = (1 << k) | r;
-        setBit(bitstream, codeword, q + 1 + k );
+        setBit_cuda(bitstream, codeword, q + 1 + k );
     }
     return;
 }
+__device__ 
 static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
 
 	//LOG
-    int32_t q = floor(log2(val + ((k==0) ? 1 : (2<<(k-1))))) - k;
+    int32_t q = floor(log2f(val + ((k==0) ? 1 : (2<<(k-1))))) - k;
+	//int32_t q = 0;
 
     uint32_t sum = val + ((k==0) ? 1 : (2<<(k-1)));
 
     int32_t codeword_length = (2 * q) + k + 1;
 
-    setBit(bitstream, sum, codeword_length);
+    setBit_cuda(bitstream, sum, codeword_length);
     return;
 }
+__device__
 static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream)
 {
     uint32_t value = (last_rice_q + 1) << k_rice;
@@ -56,11 +59,12 @@ static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_e
     if (val < value) {
         golomb_rice_code(k_rice, val, bitstream);
     } else {
-        setBit(bitstream, 0,last_rice_q + 1);
+        setBit_cuda(bitstream, 0,last_rice_q + 1);
         exp_golomb_code(k_exp, val - value, bitstream);
     }
     return;
 }
+__device__
 static void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff , int val, struct bitstream *bitstream)
 {
     if (first) {
@@ -77,6 +81,7 @@ static void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff
     return;
 
 }
+__device__
 static void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct bitstream *bitstream)
 {
     if ((previousRun== 0)||(previousRun== 1)) {
@@ -95,6 +100,7 @@ static void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct 
     return;
 
 }
+__device__
 static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, struct bitstream *bitstream)
 {
     if (previousLevel== 0) {
@@ -114,6 +120,7 @@ static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, str
 
 }
 
+__device__ 
 static int32_t GetAbs(int32_t val)
 {
     if (val < 0) {
@@ -127,6 +134,7 @@ static int32_t GetAbs(int32_t val)
 
 
 
+__device__
 static int32_t Signedintegertosymbolmapping(int32_t val)
 {
     uint32_t sn;
@@ -138,6 +146,7 @@ static int32_t Signedintegertosymbolmapping(int32_t val)
     }
     return sn;
 }
+__device__
 void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
 {
     int32_t DcCoeff;
@@ -185,6 +194,7 @@ static const uint8_t block_pattern_scan_table[64] = {
 };
 #endif
 
+__device__
 static uint8_t block_pattern_scan_read_order_table[64] = {
 	0,	1,	8,	9,	2,	3, 10, 11,
 	16,17, 24, 25, 18, 19, 26, 27,
@@ -197,6 +207,7 @@ static uint8_t block_pattern_scan_read_order_table[64] = {
 };
 
 
+__device__ 
 uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
 {
     int32_t block;
@@ -222,9 +233,9 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks,
                 abs_level_minus_1 = GetAbs(level) - 1;
                 encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream);
                 if (level >=0) {
-                    setBit(bitstream, 0,1);
+                    setBit_cuda(bitstream, 0,1);
                 } else {
-                    setBit(bitstream, 1,1);
+                    setBit_cuda(bitstream, 1,1);
                 }
 
                 previousRun = run;

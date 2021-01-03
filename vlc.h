@@ -17,10 +17,12 @@
 #include <stdbool.h>
 
 
-#include "bitstream.h"
+#include "bitstream_cuda.h"
 
-void vlc_init(void);
+__device__
 uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream);
+
+__device__
 void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream);
 
 #endif

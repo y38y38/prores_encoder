@@ -18,6 +18,5 @@
 
 #define		CUDA_ENCODER
 
-#define		HOST_ONLY //for debug
 
 #endif

@@ -17,6 +17,8 @@
 
 #define		KC_INDEX_MAX		(8*8*8*8)
 
-extern void dct_init(double *kc_value);
-extern int dct_block(int16_t *block, double *kc_value);
+void dct_init(double *kc_value);
+
+__device__
+int dct_block(int16_t *block, double *kc_value);
 #endif 

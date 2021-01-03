@@ -19,7 +19,8 @@
 
 
 
-void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
+__device__
+void setBit_cuda(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
 	if (write_bitstream->tmp_buf_byte_offset > (MAX_SLICE_BITSTREAM_SIZE - 4)) {
 		printf("bit overflow\n");
@@ -57,7 +58,8 @@ void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bi
 	//printf("offset %d %d\n", write_bitstream->tmp_buf_byte_offset, write_bitstream->tmp_buf_bit_offset);
 }
 
-void setByteInOffset(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte)
+__device__
+void setByteInOffset_cuda(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte)
 {
     
     if (write_bitstream->tmp_buf_bit_offset != 0) {
@@ -67,7 +69,8 @@ void setByteInOffset(struct bitstream *write_bitstream, uint32_t offset, uint8_t
     memcpy(write_bitstream->tmp_buf + offset, buf, size_of_byte);
 }
 
-void setByte(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_byte)
+__device__
+void setByte_cuda(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_byte)
 {
     
     if (write_bitstream->tmp_buf_bit_offset != 0) {
@@ -78,11 +81,13 @@ void setByte(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_b
     write_bitstream->tmp_buf_byte_offset +=size_of_byte;
 }
 
-uint32_t getBitSize(struct bitstream *write_bitstream)
+__device__
+uint32_t getBitSize_cuda(struct bitstream *write_bitstream)
 {
     return ((write_bitstream->tmp_buf_byte_offset * 8) + write_bitstream->tmp_buf_bit_offset );
 }
-uint8_t *getBitStream(struct bitstream *write_bitstream, uint32_t *size)
+__device__
+uint8_t *getBitStream_cuda(struct bitstream *write_bitstream, uint32_t *size)
 {
     if (write_bitstream->tmp_buf_bit_offset != 0) {
         *size =  write_bitstream->tmp_buf_byte_offset + ((write_bitstream->tmp_buf_bit_offset + 7) >> 3);
@@ -92,7 +97,8 @@ uint8_t *getBitStream(struct bitstream *write_bitstream, uint32_t *size)
     return write_bitstream->tmp_buf;
 }
 
-void initBitStream(struct bitstream *write_bitstream)
+__device__
+void initBitStream_cuda(struct bitstream *write_bitstream)
 {
     uint8_t *buf = (uint8_t*)write_bitstream->bitstream_buffer;
     write_bitstream->tmp_buf_byte_offset = 0;
@@ -102,5 +108,4 @@ void initBitStream(struct bitstream *write_bitstream)
     return ;
 
 }
-
 

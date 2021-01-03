@@ -28,7 +28,7 @@ struct Slice_cuda {
 	bool end;
 };
 
-
+__global__
 void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bitstream *stream, uint16_t* slice_size_table, int16_t *buffer, double* kc_value);
 
 #endif
