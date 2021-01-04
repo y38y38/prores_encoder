@@ -19,7 +19,9 @@
 
 
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 void setBit_cuda(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
 	if (write_bitstream->tmp_buf_byte_offset > (MAX_SLICE_BITSTREAM_SIZE - 4)) {
@@ -58,7 +60,9 @@ void setBit_cuda(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_
 	//printf("offset %d %d\n", write_bitstream->tmp_buf_byte_offset, write_bitstream->tmp_buf_bit_offset);
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 void setByteInOffset_cuda(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte)
 {
     
@@ -69,7 +73,9 @@ void setByteInOffset_cuda(struct bitstream *write_bitstream, uint32_t offset, ui
     memcpy(write_bitstream->tmp_buf + offset, buf, size_of_byte);
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 void setByte_cuda(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_byte)
 {
     
@@ -81,12 +87,16 @@ void setByte_cuda(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size
     write_bitstream->tmp_buf_byte_offset +=size_of_byte;
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 uint32_t getBitSize_cuda(struct bitstream *write_bitstream)
 {
     return ((write_bitstream->tmp_buf_byte_offset * 8) + write_bitstream->tmp_buf_bit_offset );
 }
+#ifdef CUDA_ENCODER
 __device__
+#endif
 uint8_t *getBitStream_cuda(struct bitstream *write_bitstream, uint32_t *size)
 {
     if (write_bitstream->tmp_buf_bit_offset != 0) {
@@ -97,7 +107,9 @@ uint8_t *getBitStream_cuda(struct bitstream *write_bitstream, uint32_t *size)
     return write_bitstream->tmp_buf;
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 void initBitStream_cuda(struct bitstream *write_bitstream)
 {
     uint8_t *buf = (uint8_t*)write_bitstream->bitstream_buffer;

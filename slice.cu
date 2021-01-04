@@ -22,12 +22,18 @@
 #include "vlc.h"
 #include "slice.h"
 
+#ifdef CUDA_ENCODER
+
 #include "dct.cu"
 #include "bitstream_cuda.cu"
 #include "vlc.cu"
 
+#endif
 
+
+#ifdef CUDA_ENCODER
 __device__
+#endif
 int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
 {
 	uint32_t mb_x_max = (slice_param->horizontal + 15) >>4;
@@ -36,7 +42,10 @@ int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
 	int mb_x = (slice_no % horizontal_slice_num) * slice_param->slice_size_in_mb;
 	return mb_x;
 }
+
+#ifdef CUDA_ENCODER
 __device__
+#endif
 int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
 {
 	uint32_t mb_x_max = (slice_param->horizontal + 15) >>4;
@@ -47,7 +56,9 @@ int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no)
 }
 
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 static void getPixelblock(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
 {
 	//printf("%d %d %d %d\n", x,y, horizontal, vertical);
@@ -60,7 +71,9 @@ static void getPixelblock(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, i
 	}
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 //get 1 slice data
 static void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
@@ -89,7 +102,9 @@ static void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, 
 	return;
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 //get 1 slice data
 static void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
@@ -113,7 +128,9 @@ static void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, 
 }
 
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 static void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 {
 
@@ -128,7 +145,9 @@ static void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
     }
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
 {
 
@@ -143,7 +162,9 @@ static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
     }
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 static void pre_quant(int16_t *block, int32_t  block_num)
 {
 
@@ -158,7 +179,9 @@ static void pre_quant(int16_t *block, int32_t  block_num)
     }
 }
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 static void pre_dct(int16_t *block, int32_t  block_num)
 {
 
@@ -175,7 +198,9 @@ static void pre_dct(int16_t *block, int32_t  block_num)
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 static uint32_t encode_slice_component(struct Slice_cuda *param, int16_t* pixel, uint8_t *matrix, int mb_in_block, struct bitstream *bitstream, uint8_t qscale, double *kc_value)
 {
     uint32_t start_offset= getBitSize_cuda(bitstream);
@@ -211,17 +236,19 @@ static uint8_t qScale2quantization_index(uint8_t qscale)
 #endif
 
 
-
-__device__
-int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no);
-__device__
-int mbYFormSliceNo(struct Slice_cuda* slice_param,int slice_no);
-
+#ifdef CUDA_ENCODER
 __global__
+#endif
 void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bitstream *bitstream, uint16_t* slice_size_table, int16_t *buffer,  double * kc_value)
 
 //void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bistream *bitstream, uint16_t* slice_size_table, int16_t *buffer)
 {
+	int ix = threadIdx.x + blockIdx.x * blockDim.x;
+	//printf("slice_no %d threadIdx.x %d blockIdx.x %d blockDim.x %d\n\r", ix, threadIdx.x, blockIdx.x, blockDim.x);
+	if (ix >= slice_param->slice_num_max) {
+		return;
+	}
+	slice_no = ix;
 	uint8_t *ptr = (uint8_t*)bitstream;
 	struct bitstream *bitstream_ptr = (struct bitstream *)(ptr + ((sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * slice_no));
 //	struct bitstream *bitstream_ptr = &bitstream_ptr[slice_no];
@@ -298,11 +325,12 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
     setByteInOffset_cuda(bitstream_ptr, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize_cuda(bitstream_ptr);
 	slice_size_table[slice_no] = ((current_offset - start_offset)/8);
-	printf("\n%x\n",bitstream_ptr->bitstream_buffer);
+	//printf("\n%x\n",bitstream_ptr->bitstream_buffer);
+#if 0
 		for(int j=0;j<128;j++) {
 			printf("%x ", bitstream_ptr->bitstream_buffer[j]);
 		}
-
+#endif
 	//printf("size = 0x%x\n", ((current_offset - start_offset)/8));
     return;
 }

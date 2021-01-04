@@ -7,6 +7,8 @@
  *
  **/
 
+#include "cuda_runtime.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +24,7 @@
 
 #include <time.h>
 #include <sys/time.h>
+
 
 #include "config.h"
 #include "dct.h"
@@ -247,6 +250,7 @@ void encode_slices(struct encoder_param * param)
     h_slice_param_cuda.horizontal= param->horizontal;
     h_slice_param_cuda.vertical= param->vertical;
     h_slice_param_cuda.format_444 = param->format_444;
+	h_slice_param_cuda.slice_num_max = slice_num_max;
 	struct Slice_cuda * c_slice_param_cuda;
 
 #ifdef CUDA_ENCODER
@@ -417,9 +421,16 @@ void encode_slices(struct encoder_param * param)
 	memcpy(c_kc_value, h_kc_value, kc_value_size);
 #endif	
 
-#ifndef  HOST_ONLY
+#ifdef  CUDA_ENCODER
 	i = 0;
+#if 1
+	int nElem = slice_num_max;
+	dim3 block(1, 1);
+	dim3 grid(slice_num_max);
+	encode_slice<<<grid,block>>>(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer,c_kc_value);
+#else
 	encode_slice<<<1,1>>>(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer,c_kc_value);
+#endif
 #else
 	//int i;
 	for(i = 0; i <slice_num_max;i++)  {
@@ -434,7 +445,7 @@ void encode_slices(struct encoder_param * param)
 	if (err != cudaSuccess) {
 		printf("cudaMalloc error %d %d", __LINE__, err);
 	}
-	printf("slice table %x\n", slice_size_table[0]);
+	//printf("slice table %x\n", slice_size_table[0]);
 #else
 	memcpy(slice_size_table, c_slice_size_table, slice_size_table_size);
 #endif

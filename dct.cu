@@ -18,7 +18,9 @@
 
 
 //static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
+#ifdef CUDA_ENCODER
 __device__
+#endif
 int dct_block(int16_t *block, double *kc_value) {
     int h,v,i,x,y;
 	double value;

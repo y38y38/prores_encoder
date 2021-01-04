@@ -19,6 +19,8 @@
 
 void dct_init(double *kc_value);
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 int dct_block(int16_t *block, double *kc_value);
 #endif 
