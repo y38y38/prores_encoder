@@ -480,6 +480,29 @@ void encode_slices(struct encoder_param * param)
 
 		setByte(write_bitstream, bptr->bitstream_buffer, slice_size_table[i]);
     }
+#ifdef CUDA_ENCODER
+	cudaFree(c_slice_param_cuda);
+	cudaFree(c_qscale_table);
+	cudaFree(c_y_data);
+	cudaFree(c_cb_data);
+	cudaFree(c_cr_data);
+	cudaFree(c_bitstream);
+	cudaFree(c_slice_size_table);
+	cudaFree(c_working_buffer);
+	cudaFree(c_kc_value);
+#else
+	free(c_slice_param_cuda);
+	free(c_qscale_table);
+	free(c_y_data);
+	free(c_cb_data);
+	free(c_cr_data);
+	free(c_bitstream);
+	free(c_slice_size_table);
+	free(c_working_buffer);
+	free(c_kc_value);
+#endif
+
+
 
 }
 
