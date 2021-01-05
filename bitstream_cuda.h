@@ -37,20 +37,33 @@ struct bitstream {
 };
 #endif
 
-
+#ifdef CUDA_ENCODER
 __device__
+#endif
 void initBitStream_cuda(struct bitstream *write_bitstream);
 
-__device__ 
-void setBit_cuda(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit);
-__device__ 
-void setByteInOffset_cuda(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte);
+#ifdef CUDA_ENCODER
 __device__
+#endif
+void setBit_cuda(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit);
+
+#ifdef CUDA_ENCODER
+__device__
+#endif
+void setByteInOffset_cuda(struct bitstream *write_bitstream, uint32_t offset, uint8_t *buf, uint32_t size_of_byte);
+
+#ifdef CUDA_ENCODER
+__device__
+#endif
 void setByte_cuda(struct bitstream *write_bitstream, uint8_t *buf, uint32_t size_of_byte);
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 uint32_t getBitSize_cuda(struct bitstream *write_bitstream);
 
+#ifdef CUDA_ENCODER
 __device__
+#endif
 uint8_t *getBitStream_cuda(struct bitstream *write_bitstream, uint32_t *size);
 #endif

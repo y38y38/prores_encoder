@@ -243,12 +243,15 @@ void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale
 
 //void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bistream *bitstream, uint16_t* slice_size_table, int16_t *buffer)
 {
+#ifdef CUDA_ENCODER
 	int ix = threadIdx.x + blockIdx.x * blockDim.x;
 	//printf("slice_no %d threadIdx.x %d blockIdx.x %d blockDim.x %d\n\r", ix, threadIdx.x, blockIdx.x, blockDim.x);
 	if (ix >= slice_param->slice_num_max) {
 		return;
 	}
 	slice_no = ix;
+#endif
+
 	uint8_t *ptr = (uint8_t*)bitstream;
 	struct bitstream *bitstream_ptr = (struct bitstream *)(ptr + ((sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * slice_no));
 //	struct bitstream *bitstream_ptr = &bitstream_ptr[slice_no];

@@ -16,7 +16,4 @@
 
 //#define TIME_SCALE
 
-#define		CUDA_ENCODER
-
-
 #endif

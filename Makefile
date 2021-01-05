@@ -10,13 +10,20 @@ cuda:encoder_cuda
 
 CC=nvcc
 
-CFLAGS=  -g -O2 -I./ 
+ifeq ($(MAKECMDGOALS),all)
+	CFLAGS=  -g -O2 -I./ 
+endif
 
-encoder:frame.o main.o bitstream.o slice.o debug.o
+ifeq ($(MAKECMDGOALS),cuda)
+	CFLAGS=  -g -O2 -DCUDA_ENCODER -I./ 
+endif
+
+
+encoder_cuda:frame.o main.o bitstream.o slice.o debug.o
 	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o -lm -lpthread
 
-#encoder_cuda:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o
-#	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o -lm -lpthread
+encoder:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o bitstream_cuda.o
+	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o bitstream_cuda.o -lm -lpthread
 
 vlc.o:vlc.cu
 	${CC} ${CFLAGS} -c vlc.cu
@@ -30,6 +37,9 @@ frame.o:frame.cu
 
 bitstream.o:bitstream.cu
 	${CC} ${CFLAGS} -c bitstream.cu
+
+bitstream_cuda.o:bitstream_cuda.cu
+	${CC} ${CFLAGS} -c bitstream_cuda.cu
 
 
 debug.o:debug.cu
