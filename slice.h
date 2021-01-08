@@ -20,17 +20,17 @@
 struct Slice_cuda {
 	int slice_no;
 	int slice_num_max;
-    uint8_t luma_matrix[BLOCK_IN_PIXEL];
-    uint8_t chroma_matrix[BLOCK_IN_PIXEL];
+    uint8_t *luma_matrix;
+    uint8_t *chroma_matrix;
     uint32_t slice_size_in_mb;
     uint32_t horizontal;
     uint32_t vertical;
     bool format_444;
 	bool end;
+	uint8_t *qscale_table;
+	uint16_t *y_data;
+	uint16_t *cb_data;
+	uint16_t *cr_data
 };
-#ifdef CUDA_ENCODER
-__global__
-#endif
-void encode_slice(int slice_no, struct Slice_cuda * slice_param, uint8_t *qscale_table, uint16_t *y_data, uint16_t * cb_data, uint16_t * cr_data, struct bitstream *stream, uint16_t* slice_size_table, int16_t *buffer, double* kc_value);
-
+void encode_slices2(struct Slice_cuda, param, uint16_t * slice_size_table, struct bistream *bitstream);
 #endif

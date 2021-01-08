@@ -17,9 +17,6 @@
 #include "vlc.h"
 
 #define MAX_COEFFICIENT_NUM_PER_BLOCK (64)
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
     int32_t q  = val >> k;
@@ -38,9 +35,6 @@ static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstrea
     }
     return;
 }
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream)
 {
 
@@ -55,9 +49,6 @@ static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream
     setBit_cuda(bitstream, sum, codeword_length);
     return;
 }
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream)
 {
     uint32_t value = (last_rice_q + 1) << k_rice;
@@ -70,9 +61,6 @@ static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_e
     }
     return;
 }
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff , int val, struct bitstream *bitstream)
 {
     if (first) {
@@ -89,9 +77,6 @@ static void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff
     return;
 
 }
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct bitstream *bitstream)
 {
     if ((previousRun== 0)||(previousRun== 1)) {
@@ -110,9 +95,6 @@ static void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct 
     return;
 
 }
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, struct bitstream *bitstream)
 {
     if (previousLevel== 0) {
@@ -132,9 +114,6 @@ static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, str
 
 }
 
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static int32_t GetAbs(int32_t val)
 {
     if (val < 0) {
@@ -148,9 +127,6 @@ static int32_t GetAbs(int32_t val)
 
 
 
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static int32_t Signedintegertosymbolmapping(int32_t val)
 {
     uint32_t sn;
@@ -162,9 +138,6 @@ static int32_t Signedintegertosymbolmapping(int32_t val)
     }
     return sn;
 }
-#ifdef CUDA_ENCODER
-__device__
-#endif
 void entropy_encode_dc_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
 {
     int32_t DcCoeff;
@@ -212,9 +185,6 @@ static const uint8_t block_pattern_scan_table[64] = {
 };
 #endif
 
-#ifdef CUDA_ENCODER
-__device__
-#endif
 static uint8_t block_pattern_scan_read_order_table[64] = {
 	0,	1,	8,	9,	2,	3, 10, 11,
 	16,17, 24, 25, 18, 19, 26, 27,
@@ -227,9 +197,6 @@ static uint8_t block_pattern_scan_read_order_table[64] = {
 };
 
 
-#ifdef CUDA_ENCODER
-__device__
-#endif
 uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks, struct bitstream *bitstream)
 {
     int32_t block;
