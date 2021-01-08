@@ -11,7 +11,7 @@ cuda:encoder_cuda
 CC=nvcc
 
 ifeq ($(MAKECMDGOALS),all)
-	CFLAGS=  -g -O2 -I./ 
+	CFLAGS=  -g -O3 -I./ 
 endif
 
 ifeq ($(MAKECMDGOALS),cuda)

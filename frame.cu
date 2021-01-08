@@ -243,266 +243,42 @@ void encode_slices(struct encoder_param * param)
         uint16_t slice_size = 0x0;
         setByte(write_bitstream, (uint8_t*)&slice_size, 2);
     }
-
-	memcpy(h_slice_param_cuda.luma_matrix, param->luma_matrix, BLOCK_IN_PIXEL);
-    memcpy(h_slice_param_cuda.chroma_matrix, param->chroma_matrix, BLOCK_IN_PIXEL);
+	h_slice_param_cuda.luma_matrix = param->luma_matrix;
+	h_slice_param_cuda.chroma_matrix = param->chroma_matrix;
     h_slice_param_cuda.slice_size_in_mb= param->slice_size_in_mb;
     h_slice_param_cuda.horizontal= param->horizontal;
     h_slice_param_cuda.vertical= param->vertical;
     h_slice_param_cuda.format_444 = param->format_444;
 	h_slice_param_cuda.slice_num_max = slice_num_max;
-	struct Slice_cuda * c_slice_param_cuda;
+	h_slice_param_cuda.qscale_table = param->qscale_table;
+	h_slice_param_cuda.y_data = param->y_data;
+	h_slice_param_cuda.cb_data = param->cb_data;
+	h_slice_param_cuda.cr_data = param->cr_data;
 
-#ifdef CUDA_ENCODER
-	cudaError_t err;
-	err = cudaMalloc(&c_slice_param_cuda, sizeof(struct Slice_cuda));
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-	err = cudaMemcpy(c_slice_param_cuda, &h_slice_param_cuda, sizeof(struct Slice_cuda), cudaMemcpyHostToDevice);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	c_slice_param_cuda = (struct Slice_cuda *)malloc(sizeof(struct Slice_cuda));
-	if (c_slice_param_cuda == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memcpy(c_slice_param_cuda, &h_slice_param_cuda, sizeof(struct Slice_cuda));
-
-#endif
-
-	uint8_t *c_qscale_table;
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_qscale_table, sizeof(uint8_t) * slice_num_max);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-	err = cudaMemcpy(c_qscale_table, param->qscale_table, slice_num_max, cudaMemcpyHostToDevice);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	c_qscale_table = (uint8_t*)malloc(sizeof(uint8_t) * slice_num_max);
-	if (c_qscale_table == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memcpy(c_qscale_table, param->qscale_table, slice_num_max);
-#endif
-
-	uint16_t *c_y_data;
-	int y_size = param->horizontal * param->vertical * sizeof(uint16_t);
-#ifdef CUDA_ENCODER
-
-	err = cudaMalloc(&c_y_data, y_size);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-	err = cudaMemcpy(c_y_data, param->y_data, y_size, cudaMemcpyHostToDevice);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	c_y_data = (uint16_t*)malloc(y_size);
-	if (c_y_data == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memcpy(c_y_data, param->y_data, y_size);
-#endif
-
-	uint16_t *c_cb_data;
-	int cb_size;
-	if (param->format_444 == true) {
-		cb_size = y_size;
-	} else {
-		cb_size = y_size >> 1;
-	}
-
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_cb_data, cb_size);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-	err = cudaMemcpy(c_cb_data, param->cb_data, cb_size, cudaMemcpyHostToDevice);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	c_cb_data = (uint16_t*)malloc(cb_size);
-	if (c_cb_data == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memcpy(c_cb_data, param->cb_data, cb_size);
-#endif
-
-	uint16_t *c_cr_data;
-	int cr_size = cb_size;
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_cr_data, cr_size);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-	err = cudaMemcpy(c_cr_data, param->cb_data, cr_size, cudaMemcpyHostToDevice);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	c_cr_data = (uint16_t*)malloc(cr_size);
-	if (c_cr_data == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memcpy(c_cr_data, param->cr_data, cr_size);
-#endif
-
-	struct bitstream *c_bitstream;
-	int bitstream_size = (sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * slice_num_max;
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_bitstream, bitstream_size);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	//printf("malloc size%d\n", bitstream_size);
-	c_bitstream = (struct bitstream*)malloc(bitstream_size);
-	if (c_bitstream == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memset(c_bitstream, 0x0, bitstream_size);
-#endif
-
-
-	uint16_t *c_slice_size_table;
-	int slice_size_table_size = slice_num_max * sizeof(uint16_t);
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_slice_size_table, slice_size_table_size);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
-	c_slice_size_table = (uint16_t*)malloc(slice_size_table_size);
-	if (c_slice_size_table == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-
-#endif
-
+#if 0
 	int16_t *c_working_buffer;//thread分のバッファを持つ必要あり。
 	int working_buffer_size = (MAX_SLICE_DATA * 2) * slice_num_max;
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_working_buffer, working_buffer_size);
-	if (err != cudaSuccess) {
-		printf("cudaMemcpy error %d %d", __LINE__, err);
-	}
-#else
 	c_working_buffer = (int16_t*)malloc(working_buffer_size);
 	if (c_working_buffer == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
-
 #endif
 
-
+#if 0
 	double *c_kc_value;
 	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
-#ifdef CUDA_ENCODER
-	err = cudaMalloc(&c_kc_value, kc_value_size);
-	if (err != cudaSuccess) {
-		printf("cudaMalloc error %d %d", __LINE__, err);
-	}
-	err = cudaMemcpy(c_kc_value, h_kc_value, kc_value_size, cudaMemcpyHostToDevice);
-	if (err != cudaSuccess) {
-		printf("cudaMalloc error %d %d", __LINE__, err);
-	}
-#else
 	c_kc_value = (double*)malloc(kc_value_size);
 	if (c_kc_value == NULL ) {
 		printf("cudaMalloc error %d", __LINE__);
 	}
 	memcpy(c_kc_value, h_kc_value, kc_value_size);
-#endif	
-
-#ifdef  CUDA_ENCODER
-	i = 0;
-#if 1
-	int nElem = slice_num_max;
-	dim3 block(1, 1);
-	dim3 grid(slice_num_max);
-	encode_slice<<<grid,block>>>(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer,c_kc_value);
-#else
-	encode_slice<<<1,1>>>(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer,c_kc_value);
 #endif
-#else
-	//int i;
-	for(i = 0; i <slice_num_max;i++)  {
-		encode_slice(i, c_slice_param_cuda, c_qscale_table, c_y_data, c_cb_data, c_cr_data, c_bitstream, c_slice_size_table, c_working_buffer,c_kc_value);
-	}
-#endif
+	encode_slices2(h_slice_param_cuda, slice_size_table, write_bitstream);
 
-
-
-#ifdef CUDA_ENCODER
-	err = cudaMemcpy(slice_size_table, c_slice_size_table, slice_size_table_size,cudaMemcpyDeviceToHost);
-	if (err != cudaSuccess) {
-		printf("cudaMalloc error %d %d", __LINE__, err);
-	}
-	//printf("slice table %x\n", slice_size_table[0]);
-#else
-	memcpy(slice_size_table, c_slice_size_table, slice_size_table_size);
-#endif
-
-	struct bitstream* h_bitstream;
-#ifdef CUDA_ENCODER
-	h_bitstream = (struct bitstream*)malloc(bitstream_size);
-	if (h_bitstream == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	err = cudaMemcpy(h_bitstream, c_bitstream, bitstream_size, cudaMemcpyDeviceToHost);
-	if (err != cudaSuccess) {
-		printf("cudaMalloc error %d %d", __LINE__, err);
-	}
-#else
-	h_bitstream = (struct bitstream*)malloc(bitstream_size);
-	if (h_bitstream == NULL ) {
-		printf("malloc error %d", __LINE__);
-	}
-	memcpy(h_bitstream, c_bitstream, bitstream_size);
-#endif
 
     for (i = 0; i < slice_num_max ; i++) {
-		//printf("size=0x%x %x\n", slice_size_table[i], slice_size_table_size);
         setSliceTalbeFlush(slice_size_table[i], slice_size_table_offset + (i * 2));
-		for(int j=0;j<128;j++) {
-			//printf("%x ", c_bitstream[i].bitstream_buffer[j]);
-		}
-		//printf("\n%x\n", c_bitstream[i].bitstream_buffer);
-		uint8_t *ptr = (uint8_t*)h_bitstream;
-		struct bitstream * bptr = (struct bitstream*)(ptr + ((sizeof(struct bitstream) + MAX_SLICE_BITSTREAM_SIZE) * i));
-
-		setByte(write_bitstream, bptr->bitstream_buffer, slice_size_table[i]);
     }
-#ifdef CUDA_ENCODER
-	cudaFree(c_slice_param_cuda);
-	cudaFree(c_qscale_table);
-	cudaFree(c_y_data);
-	cudaFree(c_cb_data);
-	cudaFree(c_cr_data);
-	cudaFree(c_bitstream);
-	cudaFree(c_slice_size_table);
-	cudaFree(c_working_buffer);
-	cudaFree(c_kc_value);
-#else
-	free(c_slice_param_cuda);
-	free(c_qscale_table);
-	free(c_y_data);
-	free(c_cb_data);
-	free(c_cr_data);
-	free(c_bitstream);
-	free(c_slice_size_table);
-	free(c_working_buffer);
-	free(c_kc_value);
-#endif
-
-
 
 }
 
