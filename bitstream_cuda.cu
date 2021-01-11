@@ -21,7 +21,7 @@
 
 void setBit_cuda(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
-	if (write_bitstream->tmp_buf_byte_offset > (MAX_SLICE_BITSTREAM_SIZE - 4)) {
+	if (write_bitstream->tmp_buf_byte_offset > (MAX_BITSTREAM_SIZE - 4)) {
 		printf("bit overflow\n");
 	}
     if (size_of_bit >= 24 )  {

@@ -30,7 +30,8 @@ struct Slice_cuda {
 	uint8_t *qscale_table;
 	uint16_t *y_data;
 	uint16_t *cb_data;
-	uint16_t *cr_data
+	uint16_t *cr_data;
 };
-void encode_slices2(struct Slice_cuda, param, uint16_t * slice_size_table, struct bistream *bitstream);
+void encode_slices2(struct Slice_cuda* param, int slice_no, uint16_t * slice_size_table, struct bitstream *bitstream, int16_t*working_buffer, double *kc_value);
+
 #endif

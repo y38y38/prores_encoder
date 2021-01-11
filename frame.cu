@@ -255,16 +255,16 @@ void encode_slices(struct encoder_param * param)
 	h_slice_param_cuda.cb_data = param->cb_data;
 	h_slice_param_cuda.cr_data = param->cr_data;
 
-#if 0
-	int16_t *c_working_buffer;//thread分のバッファを持つ必要あり。
-	int working_buffer_size = (MAX_SLICE_DATA * 2) * slice_num_max;
-	c_working_buffer = (int16_t*)malloc(working_buffer_size);
-	if (c_working_buffer == NULL ) {
+#if 1
+	int16_t *working_buffer;//thread分のバッファを持つ必要あり。
+	int working_buffer_size = (MAX_SLICE_DATA * 2);
+	working_buffer = (int16_t*)malloc(working_buffer_size);
+	if (working_buffer == NULL ) {
 		printf("malloc error %d", __LINE__);
 	}
 #endif
 
-#if 0
+#if 1
 	double *c_kc_value;
 	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
 	c_kc_value = (double*)malloc(kc_value_size);
@@ -273,7 +273,9 @@ void encode_slices(struct encoder_param * param)
 	}
 	memcpy(c_kc_value, h_kc_value, kc_value_size);
 #endif
-	encode_slices2(h_slice_param_cuda, slice_size_table, write_bitstream);
+	for (i = 0; i< slice_num_max;i++)  {
+		encode_slices2(&h_slice_param_cuda, i, slice_size_table, write_bitstream, working_buffer, h_kc_value);
+	}
 
 
     for (i = 0; i < slice_num_max ; i++) {
