@@ -312,25 +312,30 @@ void encode_slices(struct encoder_param * param)
 
 #endif
 #if 1
-	//y
-	for (i = 0; i< slice_num_max;i++)  {
-		dct_and_quant((working_buffer + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.luma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
-	}
-	if (h_slice_param_cuda.format_444 == true) {
-		for (i = 0; i< slice_num_max;i++)  {
-			dct_and_quant((working_buffer + cb_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+	for (int j = 0;j < 3; j++) {
+		uint8_t *matrix;
+		int mb_size;
+		if ((h_slice_param_cuda.format_444 == true) || (j == 0)) {
+			matrix = h_slice_param_cuda.luma_matrix;
+			mb_size = MB_IN_BLOCK;
+		} else {
+			matrix = h_slice_param_cuda.chroma_matrix;
+			mb_size = MB_422C_IN_BLCCK;
 		}
-		for (i = 0; i< slice_num_max;i++)  {
-			dct_and_quant((working_buffer + cr_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
-		}
-	} else {
-		for (i = 0; i< slice_num_max;i++)  {
-			dct_and_quant((working_buffer + cb_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_422C_IN_BLCCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
-		}
-		for (i = 0; i< slice_num_max;i++)  {
-			dct_and_quant((working_buffer + cr_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_422C_IN_BLCCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
-		}
+		//y
 
+//		for (i = 0; i< slice_num_max;i++)  {
+//			dct_and_quant((working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+//		}
+//		if ((h_slice_param_cuda.format_444 == true) || (j == 0)) {
+			for (i = 0; i< slice_num_max;i++)  {
+				//dct_and_quant((working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+			}
+//		} else {
+//			for (i = 0; i< slice_num_max;i++)  {
+//				dct_and_quant((working_buffer + (j*cb_offset) +  (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, MB_422C_IN_BLCCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+//			}
+//		}
 	}
 #endif
 

@@ -90,3 +90,89 @@ void dct_init(double *kc_value)
     }
     return;
 }
+#ifdef CUDA_ENCODER
+__device__
+#endif
+
+static void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
+{
+
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i * BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            data[j] = data [j] / ( qmat[j]) ;
+        }
+
+    }
+}
+#ifdef CUDA_ENCODER
+__device__
+#endif
+
+static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
+{
+
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            data[j] = data [j] / scale;
+        }
+
+    }
+}
+#ifdef CUDA_ENCODER
+__device__
+#endif
+
+static void pre_quant(int16_t *block, int32_t  block_num)
+{
+
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            data[j] = data [j] << 3;
+        }
+
+    }
+}
+#ifdef CUDA_ENCODER
+__device__
+#endif
+
+static void pre_dct(int16_t *block, int32_t  block_num)
+{
+
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            data[j] = (data[j] >> 1) - 256;
+        }
+
+    }
+}
+// macro block num * block num per macro  block * pixel num per block * pixel size
+// (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
+#ifdef CUDA_ENCODER
+__gloval__
+#endif
+
+void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t qscale) {
+    pre_dct(pixel, slice_size_in_mb * mb_in_block);
+
+    int32_t i;
+    for (i = 0;i< slice_size_in_mb * mb_in_block;i++) {
+        dct_block(&pixel[i* BLOCK_IN_PIXEL],kc_value);
+    }
+    pre_quant(pixel, slice_size_in_mb * mb_in_block);
+    encode_qt(pixel, matrix, slice_size_in_mb * mb_in_block);
+    encode_qscale(pixel,qscale , slice_size_in_mb * mb_in_block);
+
+}
