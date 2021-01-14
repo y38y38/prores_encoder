@@ -23,15 +23,15 @@ static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstrea
 
     if (k ==0) {
         if (q != 0) {
-            setBit_cuda(bitstream, 0,q);
+            setBit(bitstream, 0,q);
         }
-        setBit_cuda(bitstream, 1,1);
+        setBit(bitstream, 1,1);
     } else {
         uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
         uint32_t r = val & (tmp -1 );
 
         uint32_t codeword = (1 << k) | r;
-        setBit_cuda(bitstream, codeword, q + 1 + k );
+        setBit(bitstream, codeword, q + 1 + k );
     }
     return;
 }
@@ -46,7 +46,7 @@ static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream
 
     int32_t codeword_length = (2 * q) + k + 1;
 
-    setBit_cuda(bitstream, sum, codeword_length);
+    setBit(bitstream, sum, codeword_length);
     return;
 }
 static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream)
@@ -56,7 +56,7 @@ static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_e
     if (val < value) {
         golomb_rice_code(k_rice, val, bitstream);
     } else {
-        setBit_cuda(bitstream, 0,last_rice_q + 1);
+        setBit(bitstream, 0,last_rice_q + 1);
         exp_golomb_code(k_exp, val - value, bitstream);
     }
     return;
@@ -222,9 +222,9 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks,
                 abs_level_minus_1 = GetAbs(level) - 1;
                 encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream);
                 if (level >=0) {
-                    setBit_cuda(bitstream, 0,1);
+                    setBit(bitstream, 0,1);
                 } else {
-                    setBit_cuda(bitstream, 1,1);
+                    setBit(bitstream, 1,1);
                 }
 
                 previousRun = run;

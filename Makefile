@@ -22,8 +22,8 @@ endif
 encoder_cuda:frame.o main.o bitstream.o slice.o debug.o
 	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o -lm -lpthread
 
-encoder:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o bitstream_cuda.o
-	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o bitstream_cuda.o -lm -lpthread
+encoder:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o
+	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o -lm -lpthread
 
 vlc.o:vlc.cu
 	${CC} ${CFLAGS} -c vlc.cu

@@ -256,8 +256,8 @@ void encode_slices(struct encoder_param * param)
 	h_slice_param_cuda.cr_data = param->cr_data;
 
 #if 1
-	int16_t *working_buffer;//thread分のバッファを持つ必要あり。
-	int working_buffer_size = (MAX_SLICE_DATA * 2);
+	int16_t *working_buffer;
+	int working_buffer_size = (MAX_SLICE_DATA * sizeof(uint16_t)) * 3 * slice_num_max;
 	working_buffer = (int16_t*)malloc(working_buffer_size);
 	if (working_buffer == NULL ) {
 		printf("malloc error %d", __LINE__);
@@ -273,6 +273,67 @@ void encode_slices(struct encoder_param * param)
 	}
 	memcpy(c_kc_value, h_kc_value, kc_value_size);
 #endif
+
+#if 1
+	int cb_offset = MAX_SLICE_DATA  * slice_num_max;
+	int cr_offset = (MAX_SLICE_DATA * slice_num_max) * 2 ;
+	for (i = 0; i<slice_num_max;i++) {
+		int mb_x = mbXFormSliceNo(&h_slice_param_cuda, i);
+		int mb_y = mbYFormSliceNo(&h_slice_param_cuda, i);
+		getYver2((uint16_t*)(working_buffer + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.y_data, mb_x, mb_y,h_slice_param_cuda.slice_size_in_mb, h_slice_param_cuda.horizontal, h_slice_param_cuda.vertical);
+	}
+	if (h_slice_param_cuda.format_444 == true) {
+		for (i = 0; i<slice_num_max;i++) {
+			int mb_x = mbXFormSliceNo(&h_slice_param_cuda, i);
+			int mb_y = mbYFormSliceNo(&h_slice_param_cuda, i);
+			getYver2((uint16_t*)(working_buffer + cb_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.cb_data, mb_x, mb_y,h_slice_param_cuda.slice_size_in_mb, h_slice_param_cuda.horizontal, h_slice_param_cuda.vertical);
+		}
+	} else {
+		for (i = 0; i<slice_num_max;i++) {
+			int mb_x = mbXFormSliceNo(&h_slice_param_cuda, i);
+			int mb_y = mbYFormSliceNo(&h_slice_param_cuda, i);
+			getCver2((uint16_t*)(working_buffer + cb_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.cb_data, mb_x, mb_y,h_slice_param_cuda.slice_size_in_mb, h_slice_param_cuda.horizontal, h_slice_param_cuda.vertical);
+		}
+	}
+
+	if (h_slice_param_cuda.format_444 == true) {
+		for (i = 0; i<slice_num_max;i++) {
+			int mb_x = mbXFormSliceNo(&h_slice_param_cuda, i);
+			int mb_y = mbYFormSliceNo(&h_slice_param_cuda, i);
+			getYver2((uint16_t*)(working_buffer + cr_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.cr_data, mb_x, mb_y,h_slice_param_cuda.slice_size_in_mb, h_slice_param_cuda.horizontal, h_slice_param_cuda.vertical);
+		}
+	} else {
+		for (i = 0; i<slice_num_max;i++) {
+			int mb_x = mbXFormSliceNo(&h_slice_param_cuda, i);
+			int mb_y = mbYFormSliceNo(&h_slice_param_cuda, i);
+			getCver2((uint16_t*)(working_buffer + cr_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.cr_data, mb_x, mb_y,h_slice_param_cuda.slice_size_in_mb, h_slice_param_cuda.horizontal, h_slice_param_cuda.vertical);
+		}
+	}
+
+#endif
+#if 1
+	//y
+	for (i = 0; i< slice_num_max;i++)  {
+		dct_and_quant((working_buffer + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.luma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+	}
+	if (h_slice_param_cuda.format_444 == true) {
+		for (i = 0; i< slice_num_max;i++)  {
+			dct_and_quant((working_buffer + cb_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+		}
+		for (i = 0; i< slice_num_max;i++)  {
+			dct_and_quant((working_buffer + cr_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_IN_BLOCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+		}
+	} else {
+		for (i = 0; i< slice_num_max;i++)  {
+			dct_and_quant((working_buffer + cb_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_422C_IN_BLCCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+		}
+		for (i = 0; i< slice_num_max;i++)  {
+			dct_and_quant((working_buffer + cr_offset + (i*(MAX_SLICE_DATA ))), h_slice_param_cuda.chroma_matrix, h_slice_param_cuda.slice_size_in_mb, MB_422C_IN_BLCCK, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+		}
+
+	}
+#endif
+
 	for (i = 0; i< slice_num_max;i++)  {
 		encode_slices2(&h_slice_param_cuda, i, slice_size_table, write_bitstream, working_buffer, h_kc_value);
 	}

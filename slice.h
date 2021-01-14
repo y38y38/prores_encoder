@@ -34,4 +34,12 @@ struct Slice_cuda {
 };
 void encode_slices2(struct Slice_cuda* param, int slice_no, uint16_t * slice_size_table, struct bitstream *bitstream, int16_t*working_buffer, double *kc_value);
 
+int mbXFormSliceNo(struct Slice_cuda* slice_param, int slice_no);
+int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no);
+
+void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical);
+void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical);
+
+void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t qscale);
+
 #endif
