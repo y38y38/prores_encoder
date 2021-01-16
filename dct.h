@@ -17,7 +17,6 @@
 
 #define		KC_INDEX_MAX		(8*8*8*8)
 
-void dct_init(double *kc_value);
 
 #ifdef CUDA_ENCODER
 __device__

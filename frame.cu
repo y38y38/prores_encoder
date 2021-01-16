@@ -28,6 +28,7 @@
 
 #include "config.h"
 #include "dct.h"
+#include "dct_init.h"
 #include "bitstream.h"
 #include "vlc.h"
 #include "slice.h"
@@ -282,7 +283,7 @@ void encode_slices(struct encoder_param * param)
 	}
 #endif
 
-#if 1
+#if 0
 	double *c_kc_value;
 	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
 	c_kc_value = (double*)malloc(kc_value_size);
@@ -332,33 +333,32 @@ void encode_slices(struct encoder_param * param)
 #ifdef CUDA_ENCODER
 	cudaError_t err;
 	int16_t c_working_buffer;
-	err = cudaMallocAndCpy(c_working_Buffer, working_buffer, working_buffer_size);
+	err = cudaMallocAndCpy((void**)&c_working_buffer, working_buffer, working_buffer_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
 	uint8_t *c_luma_matrix;
 	int matrix_size = 64;
-	err = cudaMallocAndCpy(&c_luma_matrix, h_slice_param_cuda.luma_matrix, matrix_size);
+	err = cudaMallocAndCpy((void**)&c_luma_matrix, h_slice_param_cuda.luma_matrix, matrix_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
 	uint8_t *c_chroma_matrix;
-	int matrix_size = 64;
-	err = cudaMallocAndCpy(&c_chroma_matrix, h_slice_param_cuda.chroma_matrix, matrix_size);
+	err = cudaMallocAndCpy((void**)&c_chroma_matrix, h_slice_param_cuda.chroma_matrix, matrix_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
 
 	double *c_kc_value;
 	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
-	err = cudaMallocAndCpy(&c_kc_value, h_kc_value, kc_value_size);
+	err = cudaMallocAndCpy((void**)&c_kc_value, h_kc_value, kc_value_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
 
 	uint8_t *c_qscale_table;
 	int qscale_table_size = slice_num_max;
-	err = cudaMallocAndCpy(c_qscale_table, h_slice_param_cuda.qscale_table, qscale_table_size);
+	err = cudaMallocAndCpy((void**)&c_qscale_table, h_slice_param_cuda.qscale_table, qscale_table_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}

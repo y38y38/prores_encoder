@@ -12,23 +12,27 @@ CC=nvcc
 
 
 ifeq ($(MAKECMDGOALS),cuda)
-	CFLAGS=  -g -O2 -DCUDA_ENCODER -I./ 
+	CFLAGS=  -g -O3 -DCUDA_ENCODER -I./ 
 else
 	CFLAGS=  -O3 -I./ 
 endif
 
 
-encoder_cuda:frame.o main.o bitstream.o slice.o debug.o
-	${CC} -o encoder ${CFLAGS} frame.o main.o  bitstream.o  slice.o  debug.o -lm -lpthread
+encoder_cuda:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o dct_init.o
+	${CC} -o encoder ${CFLAGS} -pg frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o dct_init.o -lm -lpthread
 
-encoder:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o
-	${CC} -o encoder ${CFLAGS} -pg frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o -lm -lpthread
+encoder:frame.o main.o bitstream.o slice.o debug.o vlc.o dct.o dct_init.o
+	${CC} -o encoder ${CFLAGS} -pg frame.o main.o  bitstream.o  slice.o  debug.o  vlc.o dct.o dct_init.o -lm -lpthread
 
 vlc.o:vlc.cu
 	${CC} ${CFLAGS} -c vlc.cu
 
 dct.o:dct.cu
 	${CC} ${CFLAGS}  -c dct.cu
+
+dct_init.o:dct_init.cu
+	${CC} ${CFLAGS}  -c dct_init.cu
+
 
 frame.o:frame.cu
 	${CC} ${CFLAGS}  -c frame.cu -lm

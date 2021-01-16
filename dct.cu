@@ -76,24 +76,9 @@ int dct_block(int16_t *block, double *kc_value) {
     return 0;
 }
 
-void dct_init(double *kc_value)
-{
-    int h,v,x,y;
-    for (v=0;v<MAX_Y;v++) {
-        for (h=0;h<MAX_X;h++) {
-		    for(y=0;y<MAX_Y;y++) {
-        		for(x=0;x<MAX_X;x++) {
-            		kc_value[GET_KC_INDEX(x,y,h,v)] = cos((M_PI * v * ((2.0 * y) + 1.0)) / 16.0) * cos((M_PI * h * ((2.0 * x) + 1.0)) / 16.0);
-				}
-			}
-        }
-    }
-    return;
-}
 #ifdef CUDA_ENCODER
 __device__
 #endif
-
 static void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 {
 
@@ -162,9 +147,11 @@ static void pre_dct(int16_t *block, int32_t  block_num)
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 #ifdef CUDA_ENCODER
 __gloval__
+void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t *qscale) {
+#else
+void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t qscale) {
 #endif
 
-void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t qscale) {
     pre_dct(pixel, slice_size_in_mb * mb_in_block);
 
     int32_t i;
