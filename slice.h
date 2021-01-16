@@ -40,6 +40,11 @@ int mbYFormSliceNo(struct Slice_cuda* slice_param, int slice_no);
 void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical);
 void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical);
 
-void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t qscale);
+
+#ifdef CUDA_ENCODER
+__global__ void dct_and_quant(int16_t *pixel, uint8_t *luma_matrix,uint8_t *chroma_matrix, int slice_size_in_mb, uint32_t *mb_in_block, double *kc_value, uint8_t *qscale, int slice_num_max);
+#else
+void dct_and_quant(int ix, int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, uint32_t *mb_size, double *kc_value, uint8_t* qscale, int slice_num_max);
+#endif
 
 #endif

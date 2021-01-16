@@ -362,23 +362,39 @@ void encode_slices(struct encoder_param * param)
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
-
-
+	int nElem = slice_num_max*3;
+	dim3 block(1, 1);
+	dim3 grid(slice_num_max);
+	dct_and_quant<<<grid,block>>>(working_buffer, c_luma_matrix, c_chroma_matrix, h_slice_param_cuda.slice_size_in_mb,  c_kc_value, c_qscale_table , slice_num_max);
 
 #else
-	for (int j = 0;j < 3; j++) {
-		uint8_t *matrix;
-		int mb_size;
-		if ((h_slice_param_cuda.format_444 == true) || (j == 0)) {
-			matrix = h_slice_param_cuda.luma_matrix;
-			mb_size = MB_IN_BLOCK;
-		} else {
-			matrix = h_slice_param_cuda.chroma_matrix;
-			mb_size = MB_422C_IN_BLCCK;
-		}
-		for (i = 0; i< slice_num_max;i++)  {
-			dct_and_quant((working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table[i]);
-		}
+	uint8_t *matrix = (uint8_t*)malloc(64*3);
+	if (matrix == NULL) {
+		printf("%d\n", __LINE__);
+	}
+	memcpy(matrix, h_slice_param_cuda.luma_matrix, 64);
+	memcpy(matrix+64, h_slice_param_cuda.chroma_matrix, 64);
+	memcpy(matrix+128, h_slice_param_cuda.chroma_matrix, 64);
+	uint32_t *mb_size =  (uint32_t*)malloc(4*3);
+	if (matrix == NULL) {
+		printf("%d\n", __LINE__);
+	}
+	if (h_slice_param_cuda.format_444 == true) {
+		mb_size[0] = MB_IN_BLOCK;
+		mb_size[1] = MB_IN_BLOCK;
+		mb_size[2] = MB_IN_BLOCK;
+	} else {
+		mb_size[0] = MB_IN_BLOCK;
+		mb_size[1] = MB_422C_IN_BLCCK;
+		mb_size[2] = MB_422C_IN_BLCCK;
+	}
+
+	for (int j=0;j<3;j++) {
+
+	for (i = 0; i< slice_num_max;i++)  {
+			//dct_and_quant((working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table[i]);
+			dct_and_quant(i+(j*slice_num_max), working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA )), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table, slice_num_max);
+	}
 	}
 #endif
 

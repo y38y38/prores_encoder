@@ -146,12 +146,22 @@ static void pre_dct(int16_t *block, int32_t  block_num)
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 #ifdef CUDA_ENCODER
-__gloval__
-void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t *qscale) {
+__global__
+void dct_and_quant(int16_t *working_buffer, uint8_t *matrix, int slice_size_in_mb, double *kc_value, uint8_t *qscale_table, int slice_num_max) {
 #else
-void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb_in_block, double *kc_value, uint8_t qscale) {
+void dct_and_quant(int ix, int16_t *working_buffer, uint8_t *matrix, int slice_size_in_mb, uint32_t *mb_size, double *kc_value, uint8_t* qscale_table, int slice_num_max) {
 #endif
 
+#ifdef CUDA_ENCODER
+	int ix = threadIdx.x + blockIdx.x * blockDim.x;
+#endif
+	int ii = ix % slice_num_max;
+	int j =  ix / slice_num_max;
+	int cb_offset = MAX_SLICE_DATA * slice_num_max;
+//	int16_t *pixel = working_buffer + (j*cb_offset) + (ii *(MAX_SLICE_DATA));
+	int16_t *pixel = working_buffer;
+	int mb_in_block  = mb_size[j];
+	printf("%d %d %d %d\n", ix, mb_in_block,j, ii);
     pre_dct(pixel, slice_size_in_mb * mb_in_block);
 
     int32_t i;
@@ -159,7 +169,7 @@ void dct_and_quant(int16_t *pixel, uint8_t *matrix, int slice_size_in_mb, int mb
         dct_block(&pixel[i* BLOCK_IN_PIXEL],kc_value);
     }
     pre_quant(pixel, slice_size_in_mb * mb_in_block);
-    encode_qt(pixel, matrix, slice_size_in_mb * mb_in_block);
-    encode_qscale(pixel,qscale , slice_size_in_mb * mb_in_block);
-
+	//printf("%d %d %d %d\n",ix, j, ii, slice_num_max);
+    encode_qt(pixel, &matrix[j], slice_size_in_mb * mb_in_block);
+    encode_qscale(pixel,qscale_table[ii] , slice_size_in_mb * mb_in_block);
 }
