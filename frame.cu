@@ -332,22 +332,46 @@ void encode_slices(struct encoder_param * param)
 #endif
 #ifdef CUDA_ENCODER
 	cudaError_t err;
-	int16_t c_working_buffer;
+	int16_t *c_working_buffer;
+//	printf("host %x\n", working_buffer[0]);
 	err = cudaMallocAndCpy((void**)&c_working_buffer, working_buffer, working_buffer_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
-	uint8_t *c_luma_matrix;
-	int matrix_size = 64;
-	err = cudaMallocAndCpy((void**)&c_luma_matrix, h_slice_param_cuda.luma_matrix, matrix_size);
+	uint8_t *c_matrix;
+	int matrix_size = 64*3;
+	err = cudaMalloc(&c_matrix, matrix_size);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
-	uint8_t *c_chroma_matrix;
-	err = cudaMallocAndCpy((void**)&c_chroma_matrix, h_slice_param_cuda.chroma_matrix, matrix_size);
+	err = cudaMemcpy((c_matrix),h_slice_param_cuda.luma_matrix, 64, cudaMemcpyHostToDevice);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
+	err = cudaMemcpy((c_matrix + 64),h_slice_param_cuda.chroma_matrix, 64, cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		printf("%d\n", __LINE__);
+	}
+	err = cudaMemcpy((c_matrix+128),h_slice_param_cuda.chroma_matrix, 64, cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		printf("%d\n", __LINE__);
+	}
+	uint32_t mb_size[3];
+	if (h_slice_param_cuda.format_444 == true) {
+		mb_size[0] = 4;
+		mb_size[1] = 4;
+		mb_size[2] = 4;
+	} else {
+		mb_size[0] = 4;
+		mb_size[1] = 2;
+		mb_size[2] = 2;
+	}
+	uint32_t *c_mb_size;
+	err = cudaMallocAndCpy((void**)&c_mb_size, mb_size, 12);
+	if (err != cudaSuccess) {
+		printf("%d\n", __LINE__);
+	}
+	printf("sm %d", slice_num_max);
 
 	double *c_kc_value;
 	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
@@ -364,40 +388,14 @@ void encode_slices(struct encoder_param * param)
 	}
 	int nElem = slice_num_max*3;
 	dim3 block(1, 1);
-	dim3 grid(slice_num_max);
-	dct_and_quant<<<grid,block>>>(working_buffer, c_luma_matrix, c_chroma_matrix, h_slice_param_cuda.slice_size_in_mb,  c_kc_value, c_qscale_table , slice_num_max);
+	dim3 grid(nElem);
+	dct_and_quant<<<grid,block>>>(c_working_buffer, c_matrix,  h_slice_param_cuda.slice_size_in_mb,  c_mb_size, c_kc_value, c_qscale_table , slice_num_max);
 
-#else
-#if 0
-
-	uint8_t *matrix = (uint8_t*)malloc(64*3);
-	if (matrix == NULL) {
+	err = cudaMemcpy(working_buffer, c_working_buffer, working_buffer_size, cudaMemcpyDeviceToHost);
+	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
-	memcpy(matrix, h_slice_param_cuda.luma_matrix, 64);
-	memcpy(matrix+64, h_slice_param_cuda.chroma_matrix, 64);
-	memcpy(matrix+128, h_slice_param_cuda.chroma_matrix, 64);
-	uint32_t *mb_size =  (uint32_t*)malloc(4*3);
-	if (matrix == NULL) {
-		printf("%d\n", __LINE__);
-	}
-	if (h_slice_param_cuda.format_444 == true) {
-		mb_size[0] = MB_IN_BLOCK;
-		mb_size[1] = MB_IN_BLOCK;
-		mb_size[2] = MB_IN_BLOCK;
-	} else {
-		mb_size[0] = MB_IN_BLOCK;
-		mb_size[1] = MB_422C_IN_BLCCK;
-		mb_size[2] = MB_422C_IN_BLCCK;
-	}
 
-	for (int j=0;j<3;j++) {
-
-	for (i = 0; i< slice_num_max;i++)  {
-			//dct_and_quant((working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table[i]);
-			dct_and_quant(i+(j*slice_num_max), working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA )), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table, slice_num_max);
-	}
-	}
 #else
 	uint8_t *matrix = (uint8_t*)malloc(64*3);
 	if (matrix == NULL) {
@@ -419,16 +417,9 @@ void encode_slices(struct encoder_param * param)
 		mb_size[1] = MB_422C_IN_BLCCK;
 		mb_size[2] = MB_422C_IN_BLCCK;
 	}
-	for (int j = 0;j < 3; j++) {
-		for (i = 0; i< slice_num_max;i++)  {
-			//dct_and_quant(i+(j*slice_num_max),(working_buffer + (j*cb_offset) + (i*(MAX_SLICE_DATA ))), matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table, slice_num_max);
-			dct_and_quant(i+(j*slice_num_max),working_buffer , matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table, slice_num_max);
-		}
+	for (i = 0; i< slice_num_max*3;i++)  {
+		dct_and_quant(i,working_buffer , matrix, h_slice_param_cuda.slice_size_in_mb, mb_size, h_kc_value, h_slice_param_cuda.qscale_table, slice_num_max);
 	}
-#endif
-
-
-
 
 #endif
 
