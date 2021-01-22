@@ -154,6 +154,9 @@ void dct_and_quant(int ix, int16_t *working_buffer, uint8_t *matrix, int slice_s
 
 #ifdef CUDA_ENCODER
 	int ix = threadIdx.x + blockIdx.x * blockDim.x;
+	if (ix >= slice_num_max*3) {
+		return;
+	}
 #endif
 	int ii = ix % slice_num_max;
 	int j =  ix / slice_num_max;
@@ -161,11 +164,11 @@ void dct_and_quant(int ix, int16_t *working_buffer, uint8_t *matrix, int slice_s
 	uint8_t qscale = qscale_table[ii];
 	int cb_offset = MAX_SLICE_DATA * slice_num_max;
 	int16_t *pixel = working_buffer + (j*cb_offset) + (ii *(MAX_SLICE_DATA));
-//	printf("devi %x \n", working_buffer[0]);
-//	printf("devi %x \n", pixel[0]);
-//	printf("devi m %x \n", matrix[0]);
-
+	//printf("devi %x \n", working_buffer[0]);
+	//printf("devi %x \n", pixel[0]);
+	//printf("devi m %x \n", matrix[0]);
     pre_dct(pixel, slice_size_in_mb * mb_in_block);
+#if 1
 
     int32_t i;
     for (i = 0;i< slice_size_in_mb * mb_in_block;i++) {
@@ -179,5 +182,5 @@ void dct_and_quant(int ix, int16_t *working_buffer, uint8_t *matrix, int slice_s
 //	printf("devi 3 %x %p\n", pixel[0], matrix + (j * 64));
     encode_qscale(pixel,qscale , slice_size_in_mb * mb_in_block);
 //	printf("devi 4 %x\n", pixel[0]);
-
+#endif
 }

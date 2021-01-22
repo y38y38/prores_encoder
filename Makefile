@@ -12,7 +12,7 @@ CC=nvcc
 
 
 ifeq ($(MAKECMDGOALS),cuda)
-	CFLAGS=  -g -O3 -DCUDA_ENCODER -I./ 
+	CFLAGS=  -g -O3 -DCUDA_ENCODER -I./
 else
 	CFLAGS=  -O3 -I./ 
 endif

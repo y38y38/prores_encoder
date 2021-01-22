@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
+#include <sys/time.h>
 #include "prores.h"
 #include "debug.h"
 
@@ -84,4 +84,10 @@ void print_block(int16_t *block)
         printf("\n");
     }
     printf("\n");
+}
+
+double cpuSecond(){
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return ((double)tp.tv_sec + (double)tp.tv_usec*1.e-6);
 }

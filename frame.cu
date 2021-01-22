@@ -33,6 +33,7 @@
 #include "vlc.h"
 #include "slice.h"
 #include "encoder.h"
+#include "debug.h"
 
 
 
@@ -250,7 +251,6 @@ cudaError_t cudaMallocAndCpy(void ** dst, void *src, int size)
 	return err;
 }
 
-
 void encode_slices(struct encoder_param * param)
 {
     slice_num_max = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
@@ -371,7 +371,7 @@ void encode_slices(struct encoder_param * param)
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
-	printf("sm %d", slice_num_max);
+	printf("sm %d\n", slice_num_max);
 
 	double *c_kc_value;
 	int kc_value_size = sizeof(double) * KC_INDEX_MAX;
@@ -387,14 +387,19 @@ void encode_slices(struct encoder_param * param)
 		printf("%d\n", __LINE__);
 	}
 	int nElem = slice_num_max*3;
-	dim3 block(1, 1);
-	dim3 grid(nElem);
-	dct_and_quant<<<grid,block>>>(c_working_buffer, c_matrix,  h_slice_param_cuda.slice_size_in_mb,  c_mb_size, c_kc_value, c_qscale_table , slice_num_max);
+	dim3 block(32, 1);
+	dim3 grid((nElem + block.x -1 / block.x) );
 
+	double iStart = cpuSecond();
+	dct_and_quant<<<grid,block>>>(c_working_buffer, c_matrix,  h_slice_param_cuda.slice_size_in_mb,  c_mb_size, c_kc_value, c_qscale_table , slice_num_max);
+	CHECK(cudaDeviceSynchronize());
 	err = cudaMemcpy(working_buffer, c_working_buffer, working_buffer_size, cudaMemcpyDeviceToHost);
 	if (err != cudaSuccess) {
 		printf("%d\n", __LINE__);
 	}
+	double iElaps = cpuSecond() - iStart;
+
+	printf("time = %f\n", iElaps);
 
 #else
 	uint8_t *matrix = (uint8_t*)malloc(64*3);
