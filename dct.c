@@ -21,7 +21,6 @@ void first_dct1(double *in, double *out) {
 	double step3[8];
 	double step4[8];
 
-
 	step1[0] = in[0] + in[7];
 	step1[1] = in[1] + in[6];
 	step1[2] = in[2] + in[5];
@@ -52,7 +51,7 @@ void first_dct1(double *in, double *out) {
 	step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
 
 	step3[2] = (step2[2] * sin(M_PI / 8)) + ( step2[3] * cos(M_PI/8));
-	step3[3] = (step2[3] * sin( M_PI / 8)) + (step2[2] * (-1) * cos(  M_PI / 8));
+	step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
 
 	step3[4] = step2[4] + step2[5];
 	step3[5] = (-1) * step2[5] + step2[4];
@@ -65,9 +64,11 @@ void first_dct1(double *in, double *out) {
 	step4[3] = step3[3];
 
 	step4[4] = (step3[4] * sin(M_PI / 16)) + (step3[7] * cos(M_PI/16));
-	step4[5] = (step3[5] * cos((3 * M_PI) / 16)) + (step3[6] * sin(3 * M_PI/ 16));
+	step4[5] = (step3[5] * sin((5 * M_PI) / 16)) + (step3[6] * cos(5 * M_PI/ 16));
 	step4[6] = (step3[6] * cos((3 * M_PI) / 16)) + (step3[5] * (-1) * sin((3 * M_PI)  / 16));
-	step4[7] = (step3[7] * sin(  M_PI / 16)) + (step3[4] * (-1) * cos(( M_PI) / 16));
+	step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) + (step3[4] * (-1) * sin(( 7 * M_PI) / 16));
+
+
 
 	double step5[8];
 	step5[0] = step4[0];
@@ -80,6 +81,8 @@ void first_dct1(double *in, double *out) {
 	step5[7] = step4[7];
 
 
+
+
 	out[0] = step5[0] * 0.5;
 	out[1] = step5[1] * 0.5;
 	out[2] = step5[2] * 0.5;
@@ -87,7 +90,7 @@ void first_dct1(double *in, double *out) {
 	out[4] = step5[4] * 0.5;
 	out[5] = step5[5] * 0.5;
 	out[6] = step5[6] * 0.5;
-	out[7] = step5[0]  * 0.5;
+	out[7] = step5[7]  * 0.5;
 	return;
 
 }
@@ -116,8 +119,15 @@ int dct_block_first(int16_t * block) {
 	for(i=0;i<64;i+=8) {
 		first_dct1(out2 + i, out3 + i);
 	}
-	for(i=0;i<64;i++) {
-		block[i] = (int16_t)out3[i];
+	for(i=0;i<8;i++) {
+		block[(i*8)] = out3[i];
+		block[(i*8)+1] = out3[8+i];
+		block[(i*8)+2] = out3[16+i];
+		block[(i*8)+3] = out3[24+i];
+		block[(i*8)+4] = out3[32+i];
+		block[(i*8)+5] = out3[40+i];
+		block[(i*8)+6] = out3[48+i];
+		block[(i*8)+7] = out3[56+i];
 	}
 	return 0;
 }
@@ -127,6 +137,12 @@ int dct_block_first(int16_t * block) {
 static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
 
 int dct_block(int16_t *block) {
+	static int first2 = 0;
+	if (first2 == 0) {
+		aprint_block(block);
+		first2 ++;
+	}
+
 #ifdef FIRST_DCT_A
 	dct_block_first(block);
 #else
@@ -178,7 +194,10 @@ int dct_block(int16_t *block) {
 //        		value *= 1;
     		}
 			//double can't shift
-    		value = value / 4;
+    		
+			
+			
+			value = value / 4;
 
             result[(v << 3) + h] = value;
         }
@@ -187,6 +206,12 @@ int dct_block(int16_t *block) {
         block[i] = (int16_t)result[i];
     }
 #endif
+	static int first = 0;
+	if (first == 0) {
+		aprint_block(block);
+		first ++;
+	}
+
     return 0;
 }
 
