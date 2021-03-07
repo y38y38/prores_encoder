@@ -25,22 +25,36 @@ void first_dct1(double *in, double *out) {
 	step1[1] = in[1] + in[6];
 	step1[2] = in[2] + in[5];
 	step1[3] = in[3] + in[4];
-	step1[4] = -1 * in[4] + in[3];
-	step1[5] = -1 * in[5] + in[2];
-	step1[6] = -1 * in[6] + in[1];
-	step1[7] = -1 * in[7] + in[0];
+
+//	step1[4] = -1 * in[4] + in[3];
+	step1[4] = in[3] - in[4];
+
+//	step1[5] = -1 * in[5] + in[2];
+	step1[5] = in[2] -in[5];
+
+	//step1[6] = -1 * in[6] + in[1];
+	step1[6] = in[1] - in[6];
+	
+	
+	//step1[7] = -1 * in[7] + in[0];
+	step1[7] = in[0] - in[7];
 
 
 
 	step2[0] = step1[0] + step1[3];
 	step2[1] = step1[1] + step1[2];
-	step2[2] = (-1) * step1[2] + step1[1];
-	step2[3] = (-1) * step1[3] + step1[0];
+	//step2[2] = (-1) * step1[2] + step1[1];
+	step2[2] =  step1[1] -step1[2];
+
+	//step2[3] = (-1) * step1[3] + step1[0];
+	step2[3] = step1[0] - step1[3];
 
 	
 	step2[4] = step1[4];
 
-	step2[5] = (step1[5] * (-1) * cos(M_PI / 4)) + (step1[6] * cos(M_PI/4)) ;
+//	step2[5] = (step1[5] * (-1) * cos(M_PI / 4)) + (step1[6] * cos(M_PI/4)) ;
+	step2[5] =  (step1[6] * cos(M_PI/4)) - (step1[5]  * cos(M_PI / 4));
+
 	step2[6] = (step1[6] * cos(M_PI/4)) + (step1[5] * cos(M_PI / 4));
 
 	step2[7] = step1[7];
@@ -48,14 +62,22 @@ void first_dct1(double *in, double *out) {
 
 
 	step3[0] = (step2[0] * cos(M_PI / 4)) + (step2[1] * cos(M_PI/4));
-	step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
+
+	//step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
+	step3[1] =  (step2[0] * cos(M_PI/4)) - (step2[1] *  cos(M_PI / 4) );
 
 	step3[2] = (step2[2] * sin(M_PI / 8)) + ( step2[3] * cos(M_PI/8));
-	step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
+	//step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
+	step3[3] = (step2[3] * cos( 3 * M_PI / 8)) - (step2[2]  * sin( 3 *  M_PI / 8));
 
 	step3[4] = step2[4] + step2[5];
-	step3[5] = (-1) * step2[5] + step2[4];
-	step3[6] = (-1) * step2[6] + step2[7];
+	//step3[5] = (-1) * step2[5] + step2[4];
+	step3[5] = step2[4] - step2[5];
+
+
+	//step3[6] = (-1) * step2[6] + step2[7];
+	step3[6] = step2[7] - step2[6];
+
 	step3[7] = step2[6] + step2[7];
 
 	step4[0] = step3[0];
@@ -65,8 +87,11 @@ void first_dct1(double *in, double *out) {
 
 	step4[4] = (step3[4] * sin(M_PI / 16)) + (step3[7] * cos(M_PI/16));
 	step4[5] = (step3[5] * sin((5 * M_PI) / 16)) + (step3[6] * cos(5 * M_PI/ 16));
-	step4[6] = (step3[6] * cos((3 * M_PI) / 16)) + (step3[5] * (-1) * sin((3 * M_PI)  / 16));
-	step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) + (step3[4] * (-1) * sin(( 7 * M_PI) / 16));
+	//step4[6] = (step3[6] * cos((3 * M_PI) / 16)) + (step3[5] * (-1) * sin((3 * M_PI)  / 16));
+	step4[6] = (step3[6] * cos((3 * M_PI) / 16)) - (step3[5]  * sin((3 * M_PI)  / 16));
+
+	//step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) + (step3[4] * (-1) * sin(( 7 * M_PI) / 16));
+	step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) - (step3[4] *  sin(( 7 * M_PI) / 16));
 
 
 
@@ -79,9 +104,6 @@ void first_dct1(double *in, double *out) {
 	step5[5] = step4[5];
 	step5[6] = step4[3];
 	step5[7] = step4[7];
-
-
-
 
 	out[0] = step5[0] * 0.5;
 	out[1] = step5[1] * 0.5;
@@ -137,11 +159,6 @@ int dct_block_first(int16_t * block) {
 static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
 
 int dct_block(int16_t *block) {
-	static int first2 = 0;
-	if (first2 == 0) {
-		aprint_block(block);
-		first2 ++;
-	}
 
 #ifdef FIRST_DCT_A
 	dct_block_first(block);
@@ -206,11 +223,6 @@ int dct_block(int16_t *block) {
         block[i] = (int16_t)result[i];
     }
 #endif
-	static int first = 0;
-	if (first == 0) {
-		aprint_block(block);
-		first ++;
-	}
 
     return 0;
 }
