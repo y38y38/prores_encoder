@@ -101,6 +101,7 @@ static void pre_dct(int16_t *block, int32_t  block_num)
 
     }
 }
+#if 0
 static void after_dct(int16_t *block, int32_t  block_num)
 {
 #if 0
@@ -155,6 +156,7 @@ static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
 
     }
 }
+#endif
 static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint8_t scale, int32_t  block_num)
 {
     int16_t *data;
@@ -182,7 +184,7 @@ static uint32_t encode_slice_component(struct Slice *param, int16_t* pixel, uint
     for (i = 0;i< param->slice_size_in_mb * mb_in_block;i++) {
         dct_block(&pixel[i* BLOCK_IN_PIXEL]);
     }
-    after_dct(pixel, param->slice_size_in_mb * mb_in_block);
+    //after_dct(pixel, param->slice_size_in_mb * mb_in_block);
 	pre_quant_qt_qscale(pixel, matrix,param->qscale,param->slice_size_in_mb * mb_in_block);
 
     //pre_quant(pixel, param->slice_size_in_mb * mb_in_block);

@@ -15,6 +15,20 @@
 #include "prores.h"
 #include "dct.h"
 
+#define MATH_COS_PI_4	 (0.707107)
+#define MATH_SIN_PI_8    (0.382683)
+#define MATH_COS_PI_8    (0.923880)
+#define MATH_COS_3_PI_8  (0.382683)
+#define MATH_SIN_3_PI_8  (0.923880)
+#define MATH_SIN_PI_16   (0.195090)
+#define MATH_COS_PI_16   (0.980785)
+#define MATH_SIN_5_PI_16 (0.831470)
+#define MATH_COS_5_PI_16 (0.555570)
+#define MATH_SIN_3_PI_16 (0.555570)
+#define MATH_COS_3_PI_16 (0.831470)
+#define MATH_SIN_7_PI_16 (0.980785)
+#define MATH_COS_7_PI_16 (0.195090)
+
 void first_dct1(double *in, double *out) {
 	double step1[8];
 	double step2[8];
@@ -60,12 +74,11 @@ void first_dct1(double *in, double *out) {
 	step2[7] = step1[7];
 
 
-
-	step3[0] = (step2[0] * cos(M_PI / 4)) + (step2[1] * cos(M_PI/4));
+ 	step3[0] = (step2[0] * cos(M_PI / 4)) + (step2[1] * cos(M_PI/4));
 
 	//step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
 	step3[1] =  (step2[0] * cos(M_PI/4)) - (step2[1] *  cos(M_PI / 4) );
-
+	
 	step3[2] = (step2[2] * sin(M_PI / 8)) + ( step2[3] * cos(M_PI/8));
 	//step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
 	step3[3] = (step2[3] * cos( 3 * M_PI / 8)) - (step2[2]  * sin( 3 *  M_PI / 8));
