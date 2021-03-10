@@ -14,20 +14,21 @@
 #include "config.h"
 #include "prores.h"
 #include "dct.h"
+#if 0
 
-#define MATH_COS_PI_4	 (0.707107)
-#define MATH_SIN_PI_8    (0.382683)
-#define MATH_COS_PI_8    (0.923880)
-#define MATH_COS_3_PI_8  (0.382683)
-#define MATH_SIN_3_PI_8  (0.923880)
-#define MATH_SIN_PI_16   (0.195090)
-#define MATH_COS_PI_16   (0.980785)
-#define MATH_SIN_5_PI_16 (0.831470)
-#define MATH_COS_5_PI_16 (0.555570)
-#define MATH_SIN_3_PI_16 (0.555570)
-#define MATH_COS_3_PI_16 (0.831470)
-#define MATH_SIN_7_PI_16 (0.980785)
-#define MATH_COS_7_PI_16 (0.195090)
+#define MATH_COS_PI_4	 (0.70710678118)
+#define MATH_SIN_PI_8    (0.38268343236)
+#define MATH_COS_PI_8    (0.92387953251)
+#define MATH_COS_3_PI_8  (0.38268343236)
+#define MATH_SIN_3_PI_8  (0.92387953251)
+#define MATH_SIN_PI_16   (0.19509032201)
+#define MATH_COS_PI_16   (0.9807852804)
+#define MATH_SIN_5_PI_16 (0.8314696123)
+#define MATH_COS_5_PI_16 (0.55557023302)
+#define MATH_SIN_3_PI_16 (0.55557023302)
+#define MATH_COS_3_PI_16 (0.8314696123)
+#define MATH_SIN_7_PI_16 (0.9807852804)
+#define MATH_COS_7_PI_16 (0.19509032201)
 
 void first_dct1(double *in, double *out) {
 	double step1[8];
@@ -167,7 +168,183 @@ int dct_block_first(int16_t * block) {
 	}
 	return 0;
 }
+#else
+#if 0
+#define BAISUU (1)
+#define MATH_COS_PI_4	 (0.70710678118)
+#define MATH_SIN_PI_8    (0.38268343236)
+#define MATH_COS_PI_8    (0.92387953251)
+#define MATH_COS_3_PI_8  (0.38268343236)
+#define MATH_SIN_3_PI_8  (0.92387953251)
+#define MATH_SIN_PI_16   (0.19509032201)
+#define MATH_COS_PI_16   (0.9807852804 )
+#define MATH_SIN_5_PI_16 (0.8314696123 )
+#define MATH_COS_5_PI_16 (0.55557023302)
+#define MATH_SIN_3_PI_16 (0.55557023302)
+#define MATH_COS_3_PI_16 (0.8314696123 )
+#define MATH_SIN_7_PI_16 (0.9807852804 )
+#define MATH_COS_7_PI_16 (0.19509032201)
+#else
 
+#define BAISUU (65536)
+#define MATH_COS_PI_4	 (46340)
+#define MATH_SIN_PI_8    (25079)
+#define MATH_COS_PI_8    (60547)
+#define MATH_COS_3_PI_8  (25079)
+#define MATH_SIN_3_PI_8  (60547)
+#define MATH_SIN_PI_16   (12785)
+#define MATH_COS_PI_16   (64276 )
+#define MATH_SIN_5_PI_16 (54491 )
+#define MATH_COS_5_PI_16 (36409)
+#define MATH_SIN_3_PI_16 (36409)
+#define MATH_COS_3_PI_16 (54491 )
+#define MATH_SIN_7_PI_16 (62276 )
+#define MATH_COS_7_PI_16 (12785)
+#endif
+
+
+void first_dct1(double *in, double *out) {
+	double step1[8];
+	double step2[8];
+	double step3[8];
+	double step4[8];
+
+	step1[0] = in[0] + in[7];
+	step1[1] = in[1] + in[6];
+	step1[2] = in[2] + in[5];
+	step1[3] = in[3] + in[4];
+
+//	step1[4] = -1 * in[4] + in[3];
+	step1[4] = in[3] - in[4];
+
+//	step1[5] = -1 * in[5] + in[2];
+	step1[5] = in[2] -in[5];
+
+	//step1[6] = -1 * in[6] + in[1];
+	step1[6] = in[1] - in[6];
+	
+	
+	//step1[7] = -1 * in[7] + in[0];
+	step1[7] = in[0] - in[7];
+
+
+
+	step2[0] = step1[0] + step1[3];
+	step2[1] = step1[1] + step1[2];
+	//step2[2] = (-1) * step1[2] + step1[1];
+	step2[2] =  step1[1] -step1[2];
+
+	//step2[3] = (-1) * step1[3] + step1[0];
+	step2[3] = step1[0] - step1[3];
+
+	
+	step2[4] = step1[4];
+
+//	step2[5] = (step1[5] * (-1) * cos(M_PI / 4)) + (step1[6] * cos(M_PI/4)) ;
+//	step2[5] =  (step1[6] * cos(M_PI/4)) - (step1[5]  * cos(M_PI / 4));
+	step2[5] =  ((step1[6] * MATH_COS_PI_4)/BAISUU) - ((step1[5]  * MATH_COS_PI_4)/BAISUU);
+
+	step2[6] = ((step1[6] * MATH_COS_PI_4)/BAISUU) + ((step1[5] * MATH_COS_PI_4)/BAISUU);
+
+	step2[7] = step1[7];
+
+
+ 	step3[0] = ((step2[0] * MATH_COS_PI_4)/BAISUU) + ((step2[1] * MATH_COS_PI_4)/BAISUU);
+
+	//step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
+	step3[1] =  ((step2[0] * MATH_COS_PI_4)/BAISUU) - ((step2[1] *  MATH_COS_PI_4 )/BAISUU);
+	
+	step3[2] = ((step2[2] * MATH_SIN_PI_8)/BAISUU) + (( step2[3] * MATH_COS_PI_8)/BAISUU);
+	//step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
+	step3[3] = ((step2[3] * MATH_COS_3_PI_8)/BAISUU) - ((step2[2]  * MATH_SIN_3_PI_8)/BAISUU);
+
+	step3[4] = step2[4] + step2[5];
+	//step3[5] = (-1) * step2[5] + step2[4];
+	step3[5] = step2[4] - step2[5];
+
+
+	//step3[6] = (-1) * step2[6] + step2[7];
+	step3[6] = step2[7] - step2[6];
+
+	step3[7] = step2[6] + step2[7];
+
+	step4[0] = step3[0];
+	step4[1] = step3[1];
+	step4[2] = step3[2];
+	step4[3] = step3[3];
+
+	step4[4] = ((step3[4] * MATH_SIN_PI_16)/BAISUU) + ((step3[7] * MATH_COS_PI_16)/BAISUU);
+	step4[5] = ((step3[5] * MATH_SIN_5_PI_16)/BAISUU) + ((step3[6] * MATH_COS_5_PI_16)/BAISUU);
+	//step4[6] = (step3[6] * cos((3 * M_PI) / 16)) + (step3[5] * (-1) * sin((3 * M_PI)  / 16));
+	step4[6] = ((step3[6] * MATH_COS_3_PI_16)/BAISUU) - ((step3[5]  * MATH_SIN_3_PI_16)/BAISUU);
+
+	//step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) + (step3[4] * (-1) * sin(( 7 * M_PI) / 16));
+	step4[7] = ((step3[7] * MATH_COS_7_PI_16)/BAISUU) - ((step3[4] *  MATH_SIN_7_PI_16)/BAISUU);
+
+
+
+	double step5[8];
+	step5[0] = step4[0];
+	step5[1] = step4[4];
+	step5[2] = step4[2];
+	step5[3] = step4[6];
+	step5[4] = step4[1];
+	step5[5] = step4[5];
+	step5[6] = step4[3];
+	step5[7] = step4[7];
+
+	out[0] = step5[0] * 0.5;
+	out[1] = step5[1] * 0.5;
+	out[2] = step5[2] * 0.5;
+	out[3] = step5[3] * 0.5;
+	out[4] = step5[4] * 0.5;
+	out[5] = step5[5] * 0.5;
+	out[6] = step5[6] * 0.5;
+	out[7] = step5[7]  * 0.5;
+	return;
+
+}
+
+
+int dct_block_first(int16_t * block) {
+	int i,j;
+	double in[64];
+	double out1[64];
+	double out2[64];
+	double out3[64];
+	for(i=0;i<64;i++) {
+		in[i] = (double)block[i];
+	}
+
+	for(i=0;i < 64;i+=8) {
+		first_dct1(in + i, out1 + i);
+	}
+
+	for(i=0;i<8;i++) {
+		for(j=0;j<8;j++) {
+				out2[i * 8 + j] = out1[j * 8 + i];
+		}
+	}
+
+	for(i=0;i<64;i+=8) {
+		first_dct1(out2 + i, out3 + i);
+	}
+	for(i=0;i<8;i++) {
+		block[(i*8)] = out3[i];
+		block[(i*8)+1] = out3[8+i];
+		block[(i*8)+2] = out3[16+i];
+		block[(i*8)+3] = out3[24+i];
+		block[(i*8)+4] = out3[32+i];
+		block[(i*8)+5] = out3[40+i];
+		block[(i*8)+6] = out3[48+i];
+		block[(i*8)+7] = out3[56+i];
+	}
+	return 0;
+}
+
+
+
+#endif
 
 
 static double kc_value[MAX_X][MAX_Y][MAX_X][MAX_Y];
