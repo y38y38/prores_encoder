@@ -244,21 +244,21 @@ void first_dct1(double *in, double *out) {
 
 //	step2[5] = (step1[5] * (-1) * cos(M_PI / 4)) + (step1[6] * cos(M_PI/4)) ;
 //	step2[5] =  (step1[6] * cos(M_PI/4)) - (step1[5]  * cos(M_PI / 4));
-	step2[5] =  ((step1[6] * MATH_COS_PI_4)/BAISUU) - ((step1[5]  * MATH_COS_PI_4)/BAISUU);
+	step2[5] =  ((step1[6] * MATH_COS_PI_4)>>16) - ((step1[5]  * MATH_COS_PI_4)>>16);
 
-	step2[6] = ((step1[6] * MATH_COS_PI_4)/BAISUU) + ((step1[5] * MATH_COS_PI_4)/BAISUU);
+	step2[6] = ((step1[6] * MATH_COS_PI_4)>>16) + ((step1[5] * MATH_COS_PI_4)>>16);
 
 	step2[7] = step1[7];
 
 
- 	step3[0] = ((step2[0] * MATH_COS_PI_4)/BAISUU) + ((step2[1] * MATH_COS_PI_4)/BAISUU);
+ 	step3[0] = ((step2[0] * MATH_COS_PI_4)>>16) + ((step2[1] * MATH_COS_PI_4)>>16);
 
 	//step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
-	step3[1] =  ((step2[0] * MATH_COS_PI_4)/BAISUU) - ((step2[1] *  MATH_COS_PI_4 )/BAISUU);
+	step3[1] =  ((step2[0] * MATH_COS_PI_4)>>16) - ((step2[1] *  MATH_COS_PI_4 )>>16);
 	
-	step3[2] = ((step2[2] * MATH_SIN_PI_8)/BAISUU) + (( step2[3] * MATH_COS_PI_8)/BAISUU);
+	step3[2] = ((step2[2] * MATH_SIN_PI_8)>>16) + (( step2[3] * MATH_COS_PI_8)>>16);
 	//step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
-	step3[3] = ((step2[3] * MATH_COS_3_PI_8)/BAISUU) - ((step2[2]  * MATH_SIN_3_PI_8)/BAISUU);
+	step3[3] = ((step2[3] * MATH_COS_3_PI_8)>>16) - ((step2[2]  * MATH_SIN_3_PI_8)>>16);
 
 	step3[4] = step2[4] + step2[5];
 	//step3[5] = (-1) * step2[5] + step2[4];
@@ -275,13 +275,13 @@ void first_dct1(double *in, double *out) {
 	step4[2] = step3[2];
 	step4[3] = step3[3];
 
-	step4[4] = ((step3[4] * MATH_SIN_PI_16)/BAISUU) + ((step3[7] * MATH_COS_PI_16)/BAISUU);
-	step4[5] = ((step3[5] * MATH_SIN_5_PI_16)/BAISUU) + ((step3[6] * MATH_COS_5_PI_16)/BAISUU);
+	step4[4] = ((step3[4] * MATH_SIN_PI_16)>>16) + ((step3[7] * MATH_COS_PI_16)>>16);
+	step4[5] = ((step3[5] * MATH_SIN_5_PI_16)>>16) + ((step3[6] * MATH_COS_5_PI_16)>>16);
 	//step4[6] = (step3[6] * cos((3 * M_PI) / 16)) + (step3[5] * (-1) * sin((3 * M_PI)  / 16));
-	step4[6] = ((step3[6] * MATH_COS_3_PI_16)/BAISUU) - ((step3[5]  * MATH_SIN_3_PI_16)/BAISUU);
+	step4[6] = ((step3[6] * MATH_COS_3_PI_16)>>16) - ((step3[5]  * MATH_SIN_3_PI_16)>>16);
 
 	//step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) + (step3[4] * (-1) * sin(( 7 * M_PI) / 16));
-	step4[7] = ((step3[7] * MATH_COS_7_PI_16)/BAISUU) - ((step3[4] *  MATH_SIN_7_PI_16)/BAISUU);
+	step4[7] = ((step3[7] * MATH_COS_7_PI_16)>>16) - ((step3[4] *  MATH_SIN_7_PI_16)>>16);
 
 
 
@@ -418,22 +418,22 @@ void first_dct1(int32_t *in, int32_t *out) {
 
 //	step2[5] = (step1[5] * (-1) * cos(M_PI / 4)) + (step1[6] * cos(M_PI/4)) ;
 //	step2[5] =  (step1[6] * cos(M_PI/4)) - (step1[5]  * cos(M_PI / 4));
-	step2[5] =  ((step1[6] * MATH_COS_PI_4)/BAISUU) - ((step1[5]  * MATH_COS_PI_4)/BAISUU);
+	step2[5] =  ((step1[6] * MATH_COS_PI_4)>>16) - ((step1[5]  * MATH_COS_PI_4)>>16);
 
-	step2[6] = ((step1[6] * MATH_COS_PI_4)/BAISUU) + ((step1[5] * MATH_COS_PI_4)/BAISUU);
+	step2[6] = ((step1[6] * MATH_COS_PI_4)>>16) + ((step1[5] * MATH_COS_PI_4)>>16);
 
 	step2[7] = step1[7];
 
 
 	//n+3
- 	step3[0] = ((step2[0] * MATH_COS_PI_4)/BAISUU) + ((step2[1] * MATH_COS_PI_4)/BAISUU);
+ 	step3[0] = ((step2[0] * MATH_COS_PI_4)>>16) + ((step2[1] * MATH_COS_PI_4)>>16);
 
 	//step3[1] = (step2[1] * (-1) * cos(M_PI / 4) ) + (step2[0] * cos(M_PI/4));
-	step3[1] =  ((step2[0] * MATH_COS_PI_4)/BAISUU) - ((step2[1] *  MATH_COS_PI_4 )/BAISUU);
+	step3[1] =  ((step2[0] * MATH_COS_PI_4)>>16) - ((step2[1] *  MATH_COS_PI_4 )>>16);
 	
-	step3[2] = ((step2[2] * MATH_SIN_PI_8)/BAISUU) + (( step2[3] * MATH_COS_PI_8)/BAISUU);
+	step3[2] = ((step2[2] * MATH_SIN_PI_8)>>16) + (( step2[3] * MATH_COS_PI_8)>>16);
 	//step3[3] = (step2[3] * cos( 3 * M_PI / 8)) + (step2[2] * (-1) * sin( 3 *  M_PI / 8));
-	step3[3] = ((step2[3] * MATH_COS_3_PI_8)/BAISUU) - ((step2[2]  * MATH_SIN_3_PI_8)/BAISUU);
+	step3[3] = ((step2[3] * MATH_COS_3_PI_8)>>16) - ((step2[2]  * MATH_SIN_3_PI_8)>>16);
 
 	step3[4] = step2[4] + step2[5];
 	//step3[5] = (-1) * step2[5] + step2[4];
@@ -451,13 +451,13 @@ void first_dct1(int32_t *in, int32_t *out) {
 	step4[2] = step3[2];
 	step4[3] = step3[3];
 
-	step4[4] = ((step3[4] * MATH_SIN_PI_16)/BAISUU) + ((step3[7] * MATH_COS_PI_16)/BAISUU);
-	step4[5] = ((step3[5] * MATH_SIN_5_PI_16)/BAISUU) + ((step3[6] * MATH_COS_5_PI_16)/BAISUU);
+	step4[4] = ((step3[4] * MATH_SIN_PI_16)>>16) + ((step3[7] * MATH_COS_PI_16)>>16);
+	step4[5] = ((step3[5] * MATH_SIN_5_PI_16)>>16) + ((step3[6] * MATH_COS_5_PI_16)>>16);
 	//step4[6] = (step3[6] * cos((3 * M_PI) / 16)) + (step3[5] * (-1) * sin((3 * M_PI)  / 16));
-	step4[6] = ((step3[6] * MATH_COS_3_PI_16)/BAISUU) - ((step3[5]  * MATH_SIN_3_PI_16)/BAISUU);
+	step4[6] = ((step3[6] * MATH_COS_3_PI_16)>>16) - ((step3[5]  * MATH_SIN_3_PI_16)>>16);
 
 	//step4[7] = (step3[7] * cos( 7 *  M_PI / 16)) + (step3[4] * (-1) * sin(( 7 * M_PI) / 16));
-	step4[7] = ((step3[7] * MATH_COS_7_PI_16)/BAISUU) - ((step3[4] *  MATH_SIN_7_PI_16)/BAISUU);
+	step4[7] = ((step3[7] * MATH_COS_7_PI_16)>>16) - ((step3[4] *  MATH_SIN_7_PI_16)>>16);
 
 
 
@@ -472,14 +472,14 @@ void first_dct1(int32_t *in, int32_t *out) {
 	step5[7] = step4[7];
 
 	//n+3
-	out[0] = step5[0] * 0.5;
-	out[1] = step5[1] * 0.5;
-	out[2] = step5[2] * 0.5;
-	out[3] = step5[3] * 0.5;
-	out[4] = step5[4] * 0.5;
-	out[5] = step5[5] * 0.5;
-	out[6] = step5[6] * 0.5;
-	out[7] = step5[7]  * 0.5;
+	out[0] = step5[0] >>1;
+	out[1] = step5[1] >>1;
+	out[2] = step5[2] >>1;
+	out[3] = step5[3] >>1;
+	out[4] = step5[4] >>1;
+	out[5] = step5[5] >>1;
+	out[6] = step5[6] >>1;
+	out[7] = step5[7]  >>1;
 	return;
 
 }
