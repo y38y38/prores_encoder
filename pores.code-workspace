@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../prores_decoder"
+		},
+		{
+			"path": "../yuv"
+		},
+		{
+			"path": "../dct"
+		},
+		{
+			"path": "../vlc"
+		},
+		{
+			"path": "../text"
+		}
+	],
+	"settings": {}
+}
