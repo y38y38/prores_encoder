@@ -19,5 +19,12 @@
 			"path": "../text"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"array": "c",
+			"string": "c",
+			"string_view": "c",
+			"utility.h": "c"
+		}
+	}
 }
