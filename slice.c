@@ -87,6 +87,49 @@ static void getCver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, 
 }
 
 
+static void pre_dct(int16_t *block, int32_t  block_num)
+{
+
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            //data[j] = (data[j] >> 1) - 256;
+            data[j] = (data[j]) - 512;
+        }
+
+    }
+}
+#if 0
+static void after_dct(int16_t *block, int32_t  block_num)
+{
+#if 0
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            data[j] = (data[j])>>1;
+        }
+
+    }
+	#endif
+}
+static void pre_quant(int16_t *block, int32_t  block_num)
+{
+
+    int16_t *data;
+    int32_t i,j;
+    for (i = 0; i < block_num; i++) {
+        data = block + (i*BLOCK_IN_PIXEL);
+        for (j=0;j<BLOCK_IN_PIXEL;j++) {
+            //data[j] = data [j] << 3;
+            data[j] = data [j] << 2;
+        }
+
+    }
+}
 static void encode_qt(int16_t *block, uint8_t *qmat, int32_t  block_num)
 {
 
@@ -113,32 +156,21 @@ static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
 
     }
 }
-static void pre_quant(int16_t *block, int32_t  block_num)
+#endif
+static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint8_t scale, int32_t  block_num)
 {
-
     int16_t *data;
     int32_t i,j;
     for (i = 0; i < block_num; i++) {
-        data = block + (i*BLOCK_IN_PIXEL);
+        data = block + (i * BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
-            data[j] = data [j] << 3;
+            data[j] = (data [j] << 2) / (( qmat[j]) * scale) ;
         }
 
     }
-}
-static void pre_dct(int16_t *block, int32_t  block_num)
-{
 
-    int16_t *data;
-    int32_t i,j;
-    for (i = 0; i < block_num; i++) {
-        data = block + (i*BLOCK_IN_PIXEL);
-        for (j=0;j<BLOCK_IN_PIXEL;j++) {
-            data[j] = (data[j] >> 1) - 256;
-        }
-
-    }
 }
+
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 
@@ -152,9 +184,12 @@ static uint32_t encode_slice_component(struct Slice *param, int16_t* pixel, uint
     for (i = 0;i< param->slice_size_in_mb * mb_in_block;i++) {
         dct_block(&pixel[i* BLOCK_IN_PIXEL]);
     }
-    pre_quant(pixel, param->slice_size_in_mb * mb_in_block);
-    encode_qt(pixel, param->chroma_matrix, param->slice_size_in_mb * mb_in_block);
-    encode_qscale(pixel,param->qscale , param->slice_size_in_mb * mb_in_block);
+    //after_dct(pixel, param->slice_size_in_mb * mb_in_block);
+	pre_quant_qt_qscale(pixel, matrix,param->qscale,param->slice_size_in_mb * mb_in_block);
+
+    //pre_quant(pixel, param->slice_size_in_mb * mb_in_block);
+    //encode_qt(pixel, param->chroma_matrix, param->slice_size_in_mb * mb_in_block);
+    //encode_qscale(pixel,param->qscale , param->slice_size_in_mb * mb_in_block);
 
     entropy_encode_dc_coefficients(pixel, param->slice_size_in_mb * mb_in_block, param->bitstream);
     entropy_encode_ac_coefficients(pixel, param->slice_size_in_mb * mb_in_block, param->bitstream);
@@ -232,7 +267,6 @@ uint16_t encode_slice(struct Slice *param)
     setByteInOffset(param->bitstream, code_size_of_y_data_offset , (uint8_t *)&y_size, 2);
     setByteInOffset(param->bitstream, code_size_of_cb_data_offset , (uint8_t *)&cb_size, 2);
     uint32_t current_offset = getBitSize(param->bitstream);
-//	printf("size=0x%x\n",  ((current_offset - start_offset)/8));
     return ((current_offset - start_offset)/8);
 }
 

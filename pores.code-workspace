@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../prores_decoder"
+		},
+		{
+			"path": "../yuv"
+		},
+		{
+			"path": "../dct"
+		},
+		{
+			"path": "../vlc"
+		},
+		{
+			"path": "../text"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"array": "c",
+			"string": "c",
+			"string_view": "c",
+			"utility.h": "c"
+		}
+	}
+}
