@@ -18,25 +18,46 @@
 
 #define MAX_COEFFICIENT_NUM_PER_BLOCK (64)
 
-static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream)
+static void golomb_rice_code(int32_t k, uint32_t val, struct bitstream *bitstream, int level_negative)
 {
     int32_t q  = val >> k;
 
     if (k ==0) {
         if (q != 0) {
-            setBit(bitstream, 0,q);
+			if (level_negative < 0) {
+    	        setBit(bitstream, 1,1+q);
+			} else if (level_negative == 0) {
+    	        setBit(bitstream, 1<<1,1+q+1);
+			} else {
+    	        setBit(bitstream, 1<<1|1,1+q+1);
+
+			}
+        } else {
+			if (level_negative < 0) {
+	            setBit(bitstream, 1,1);
+			} else if (level_negative == 0) {
+	            setBit(bitstream, 1<<1,1+1);
+			} else {
+	            setBit(bitstream, 1<<1|1,1+1);
+			}
         }
-        setBit(bitstream, 1,1);
     } else {
         uint32_t tmp = (k==0) ? 1 : (2<<(k-1));
         uint32_t r = val & (tmp -1 );
 
         uint32_t codeword = (1 << k) | r;
-        setBit(bitstream, codeword, q + 1 + k );
+		if (level_negative < 0) {
+    	    setBit(bitstream, codeword, q + 1 + k );
+		} else if (level_negative == 0) {
+    	    setBit(bitstream, codeword<<1, q + 1 + k+1 );
+
+		} else {
+    	    setBit(bitstream, codeword<<1|1, q + 1 + k+1 );
+		}
     }
     return;
 }
-static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream)
+static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream, int add_bit, int level_negative)
 {
 
 	//LOG
@@ -45,34 +66,39 @@ static void exp_golomb_code(int32_t k, uint32_t val, struct bitstream *bitstream
     uint32_t sum = val + ((k==0) ? 1 : (2<<(k-1)));
 
     int32_t codeword_length = (2 * q) + k + 1;
-
-    setBit(bitstream, sum, codeword_length);
+	if (level_negative < 0) {
+	    setBit(bitstream, sum, codeword_length+add_bit);
+	} else if (level_negative == 0) {
+	    setBit(bitstream, sum<<1, codeword_length+add_bit+1);
+	} else {
+	    setBit(bitstream, sum<<1|1, codeword_length+add_bit+1);
+	}
     return;
 }
-static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream)
+static void rice_exp_combo_code(int32_t last_rice_q, int32_t k_rice, int32_t k_exp, uint32_t val, struct bitstream *bitstream, int level_negative)
 {
     uint32_t value = (last_rice_q + 1) << k_rice;
 
     if (val < value) {
-        golomb_rice_code(k_rice, val, bitstream);
+        golomb_rice_code(k_rice, val, bitstream, level_negative);
     } else {
-        setBit(bitstream, 0,last_rice_q + 1);
-        exp_golomb_code(k_exp, val - value, bitstream);
+//        setBit(bitstream, 0,last_rice_q + 1);
+        exp_golomb_code(k_exp, val - value, bitstream, last_rice_q + 1,  level_negative);
     }
     return;
 }
 static void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff , int val, struct bitstream *bitstream)
 {
     if (first) {
-        exp_golomb_code(5, val, bitstream);
+        exp_golomb_code(5, val, bitstream, 0, -1);
     } else if (abs_previousDCDiff == 0) {
-        exp_golomb_code(0, val, bitstream);
+        exp_golomb_code(0, val, bitstream, 0, -1);
     } else if (abs_previousDCDiff == 1) {
-        exp_golomb_code(1, val, bitstream);
+        exp_golomb_code(1, val, bitstream, 0, -1);
     } else if (abs_previousDCDiff == 2) {
-        rice_exp_combo_code(1,2,3, val, bitstream);
+        rice_exp_combo_code(1,2,3, val, bitstream, -1);
     } else {
-        exp_golomb_code(3, val, bitstream);
+        exp_golomb_code(3, val, bitstream, 0, -1);
     }
     return;
 
@@ -80,35 +106,35 @@ static void entropy_encode_dc_coefficient(bool first, int32_t abs_previousDCDiff
 static void encode_vlc_codeword_ac_run(int32_t previousRun, int32_t val, struct bitstream *bitstream)
 {
     if ((previousRun== 0)||(previousRun== 1)) {
-        rice_exp_combo_code(2,0,1, val,bitstream);
+        rice_exp_combo_code(2,0,1, val,bitstream, -1);
     } else if ((previousRun== 2)||(previousRun== 3)) {
-        rice_exp_combo_code(1,0,1, val, bitstream);
+        rice_exp_combo_code(1,0,1, val, bitstream, -1);
     } else if (previousRun== 4) {
-        exp_golomb_code(0, val, bitstream);
+        exp_golomb_code(0, val, bitstream, 0, -1);
     } else if ((previousRun>= 5) && (previousRun <= 8))  {
-        rice_exp_combo_code(1,1,2, val,bitstream);
+        rice_exp_combo_code(1,1,2, val,bitstream, -1);
     } else if ((previousRun>= 9) && (previousRun <= 14))  {
-        exp_golomb_code(1, val,bitstream);
+        exp_golomb_code(1, val,bitstream, 0, -1);
     } else {
-        exp_golomb_code(2, val,bitstream);
+        exp_golomb_code(2, val,bitstream, 0, -1);
     }
     return;
 
 }
-static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, struct bitstream *bitstream)
+static void encode_vlc_codeword_ac_level(int32_t previousLevel, int32_t val, struct bitstream *bitstream, int level_negative)
 {
     if (previousLevel== 0) {
-        rice_exp_combo_code(2,0,2, val, bitstream);
+        rice_exp_combo_code(2,0,2, val, bitstream,level_negative);
     } else if (previousLevel== 1) {
-        rice_exp_combo_code(1,0,1, val, bitstream);
+        rice_exp_combo_code(1,0,1, val, bitstream,level_negative);
     } else if (previousLevel== 2) {
-        rice_exp_combo_code(2,0,1, val, bitstream);
+        rice_exp_combo_code(2,0,1, val, bitstream,level_negative);
     } else if (previousLevel == 3)  {
-        exp_golomb_code(0, val, bitstream);
+        exp_golomb_code(0, val, bitstream, 0,level_negative);
     } else if ((previousLevel>= 4) && (previousLevel<= 7))  {
-        exp_golomb_code(1, val, bitstream);
+        exp_golomb_code(1, val, bitstream, 0,level_negative);
     } else {
-        exp_golomb_code(2, val, bitstream);
+        exp_golomb_code(2, val, bitstream, 0,level_negative);
     }
     return;
 
@@ -209,11 +235,16 @@ uint32_t entropy_encode_ac_coefficients(int16_t*coefficients, int32_t numBlocks,
                 encode_vlc_codeword_ac_run(previousRun, run, bitstream);
 
                 abs_level_minus_1 = GetAbs(level) - 1;
-                encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream);
+				
                 if (level >=0) {
-                    setBit(bitstream, 0,1);
+	                encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream, 0);
+				} else {
+	                encode_vlc_codeword_ac_level( previousLevelSymbol, abs_level_minus_1, bitstream, 1);
+				}
+                if (level >=0) {
+                    //setBit(bitstream, 0,1);
                 } else {
-                    setBit(bitstream, 1,1);
+                    //setBit(bitstream, 1,1);
                 }
 
                 previousRun = run;
