@@ -21,7 +21,7 @@ struct encoder_param {
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;
     uint32_t qscale_table_size;
-    uint8_t *qscale_table;
+    uint32_t *qscale_table;
     uint32_t slice_size_in_mb;
     uint32_t horizontal;
     uint32_t vertical;

@@ -22,7 +22,7 @@ uint8_t luma_matrix2_[MATRIX_NUM];
 uint8_t chroma_matrix2_[MATRIX_NUM];
 
 uint32_t qscale_table_size_ = 0;
-uint8_t  qscale_table_[MAX_SLICE_NUM];
+uint32_t  qscale_table_[MAX_SLICE_NUM];
 uint32_t slice_size_in_mb_ = 0;
 uint32_t horizontal_ = 0;
 uint32_t vertical_ = 0;
@@ -76,6 +76,46 @@ int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
     return 0;
 
 }
+int32_t Text2Array(char *file, uint32_t *array, int num)
+{
+    FILE *input = fopen((char*)file, "r");
+    if (input == NULL) {
+        printf("%d %s\n", __LINE__, file);
+        return -1;
+    }
+    int len = 0;
+    for (int32_t j = 0;j<num;j++) {
+        char temp[CHAR_BUF_SIZE];
+        char * ret = fgets(temp, CHAR_BUF_SIZE, input);
+        if (ret != temp) {
+            printf("err %d\n", __LINE__);
+            return -1;
+        }
+        ret = strstr(temp + len, ",");
+        if (ret == NULL) {
+            /* when it is last value, it donot need ",". */
+            if (j == (num - 1)) {
+                ret = strstr(temp + len, "\r");
+                if (ret == NULL) {
+                    printf("%d\n", __LINE__);
+                    return -1;
+                }
+            } else {
+                printf("%d\n", __LINE__);
+                return -1;
+            }
+        }
+        char temp2[CHAR_BUF_SIZE];
+        memset(temp2, 0x0, CHAR_BUF_SIZE);
+        memcpy(temp2, temp + len , ret - (temp + len));
+        len = ret - temp + 1;
+        int val = atoi(temp2);
+        array[j] = val;
+//        printf("%d ",val);
+    }
+    return 0;
+
+}
 int32_t SetChromaMatrix(char *matrix_file)
 {
     return Text2Matrix(matrix_file, chroma_matrix2_, MATRIX_ROW_NUM, MATRIX_COLUMN_NUM);
@@ -100,7 +140,7 @@ int32_t SetDefaultLumaMatrix(void)
 int32_t SetQscaleTable(char *qscale_file, int32_t table_size)
 {
     //printf("table_size %d\n", table_size);
-    return Text2Matrix(qscale_file, qscale_table_ , 1, table_size);
+    return Text2Array(qscale_file, qscale_table_ , table_size);
 }
 
 #define DEFAULT_HORIZONTAL   (128)

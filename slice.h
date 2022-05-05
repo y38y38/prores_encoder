@@ -20,7 +20,7 @@ struct Slice {
 	int slice_no;
     uint8_t *luma_matrix;
     uint8_t *chroma_matrix;
-    uint8_t qscale;
+    uint32_t qscale;
     uint32_t slice_size_in_mb;
     uint32_t horizontal;
     uint32_t vertical;

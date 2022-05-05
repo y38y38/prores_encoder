@@ -157,7 +157,7 @@ static void encode_qscale(int16_t *block, uint8_t scale, int32_t  block_num)
     }
 }
 #endif
-static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint8_t scale, int32_t  block_num)
+static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint32_t scale, int32_t  block_num)
 {
     int16_t *data;
     int32_t i,j;
@@ -211,6 +211,17 @@ static uint8_t qScale2quantization_index(uint8_t qscale)
 }
 #endif
 
+
+uint8_t qScale2quantization_index(uint32_t qScale)
+{
+	uint8_t quantization_index;
+	if (qScale >128) {
+		quantization_index = ((qScale - 128) * 4) + 128;
+	} else {
+		quantization_index = (uint8_t) qScale;
+	}
+	return quantization_index;
+}
 uint16_t encode_slice(struct Slice *param)
 {
 	//initBitStream(param->bitstream);
@@ -225,7 +236,8 @@ uint16_t encode_slice(struct Slice *param)
     uint8_t reserve =0x0;
     setBit(param->bitstream, reserve, 3);
 
-    setByte(param->bitstream, &param->qscale, 1);
+	uint8_t qscale = qScale2quantization_index(param->qscale);
+    setByte(param->bitstream, &qscale, 1);
 
     uint32_t code_size_of_y_data_offset = getBitSize(param->bitstream);
     code_size_of_y_data_offset = code_size_of_y_data_offset >> 3;
