@@ -19,24 +19,19 @@
 
 
 
-
+//size_of_bif is max 29
 void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bit)
 {
 	if (write_bitstream->tmp_buf_byte_offset > (MAX_SLICE_BITSTREAM_SIZE - 4)) {
 		printf("bit overflow\n");
 	}
-    if (size_of_bit >= 24 )  {
-        printf("error %s %d %d\n", __FUNCTION__, __LINE__, size_of_bit);
-        return;
-    }
-    
-    uint32_t tmp = buf;
+    uint64_t tmp = (uint64_t)buf;
     uint32_t a = write_bitstream->tmp_buf_bit_offset + size_of_bit;
-    if (a > 32) {
-        printf("error %s %d\n", __FUNCTION__, __LINE__);
+    if (a >= 40) {
+        printf("error %s %d %d %d\n", __FUNCTION__, __LINE__, write_bitstream->tmp_buf_bit_offset, size_of_bit);
         return ;
     }
-    uint32_t b = 32 - a;
+    uint32_t b = 64 - a;
     tmp = tmp << b;
 
 	uint8_t tmp_bit;
@@ -45,12 +40,16 @@ void setBit(struct bitstream *write_bitstream, uint32_t buf, uint32_t size_of_bi
 	} else {
     	tmp_bit = 0;
 	}
-    tmp_bit = tmp_bit | ((uint8_t)(tmp>>24));
+    tmp_bit = tmp_bit | ((uint8_t)(tmp>>56));
     *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset) = tmp_bit;
     //printf("set %x %x %x %x\n", tmp_bit,((uint8_t)(tmp>>16)),((uint8_t)(tmp>>8)),((uint8_t)(tmp)));
-    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 1) =  ((uint8_t)(tmp>>16));
-    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 2) =  ((uint8_t)(tmp>>8));
-    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 3) =  ((uint8_t)(tmp));
+    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 1) =  ((uint8_t)(tmp>>48));
+    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 2) =  ((uint8_t)(tmp>>40));
+    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 3) =  ((uint8_t)(tmp>>32));
+    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 4) =  ((uint8_t)(tmp>>24));
+//    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 5) =  ((uint8_t)(tmp>>16));
+//    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 6) =  ((uint8_t)(tmp>>8));
+//    *(write_bitstream->tmp_buf + write_bitstream->tmp_buf_byte_offset + 7) =  ((uint8_t)(tmp));
     //printf("bit %x %x\n", tmp_buf_byte_offset, tmp_bit);
 
     write_bitstream->tmp_buf_byte_offset += (write_bitstream->tmp_buf_bit_offset + size_of_bit) >> 3;

@@ -34,10 +34,9 @@ bool format_444_ = false;
 #define CHAR_BUF_SIZE     (1024)
 int32_t Text2Matrix(char *file, uint8_t *matrix, int row_num, int column_num)
 {
-    
     FILE *input = fopen((char*)file, "r");
     if (input == NULL) {
-        printf("%d\n", __LINE__);
+        printf("%d %s\n", __LINE__, file);
         return -1;
     }
     for (int32_t i=0; i<column_num;i++) {
@@ -358,6 +357,7 @@ int main(int argc, char **argv)
                 break;
             }
         }
+
 #ifdef TIME_SCALE
 		}
 #endif
