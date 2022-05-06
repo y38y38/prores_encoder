@@ -83,33 +83,14 @@ int32_t Text2Array(char *file, uint32_t *array, int num)
         printf("%d %s\n", __LINE__, file);
         return -1;
     }
-    int len = 0;
     for (int32_t j = 0;j<num;j++) {
         char temp[CHAR_BUF_SIZE];
         char * ret = fgets(temp, CHAR_BUF_SIZE, input);
         if (ret != temp) {
-            printf("err %d\n", __LINE__);
+            printf("err %s %d\n", __func__, __LINE__);
             return -1;
         }
-        ret = strstr(temp + len, ",");
-        if (ret == NULL) {
-            /* when it is last value, it donot need ",". */
-            if (j == (num - 1)) {
-                ret = strstr(temp + len, "\r");
-                if (ret == NULL) {
-                    printf("%d\n", __LINE__);
-                    return -1;
-                }
-            } else {
-                printf("%d\n", __LINE__);
-                return -1;
-            }
-        }
-        char temp2[CHAR_BUF_SIZE];
-        memset(temp2, 0x0, CHAR_BUF_SIZE);
-        memcpy(temp2, temp + len , ret - (temp + len));
-        len = ret - temp + 1;
-        int val = atoi(temp2);
+        int val = atoi(temp);
         array[j] = val;
 //        printf("%d ",val);
     }
