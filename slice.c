@@ -161,10 +161,11 @@ static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint32_t scale, i
 {
     int16_t *data;
     int32_t i,j;
+	uint8_t qscale = (uint8_t)scale;
     for (i = 0; i < block_num; i++) {
         data = block + (i * BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
-            data[j] = (data [j] << 2) / (( qmat[j]) * scale) ;
+            data[j] = (data [j] << 2) / (( qmat[j]) * qscale) ;
         }
 
     }
