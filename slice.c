@@ -23,6 +23,30 @@
 #include "slice.h"
 
 
+static void setPixelblock(uint16_t *in, uint16_t *out, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
+{
+#if 0
+		memcpy(
+		out + x + (horizontal * y) ,
+		in,
+		sizeof(uint16_t));
+#else
+	int i;
+	for(i=0;i<8;i++) {
+		memcpy(
+		out + x + (horizontal * y) + (horizontal * i),
+		in + (i*8),
+		8 * sizeof(uint16_t));
+	//	printf(" %x\n", *(uint16_t*)(in + x + (horizontal * y) + (horizontal * i)));
+//		if ((x==0) &&(i==1) ){
+//		printf("%d %d %d ", x,y, in[0]);
+//		printf("%d ",  x + (horizontal * y) + (horizontal * i));
+//		printf(" %d %d\n", *(uint16_t*)(out + x + (horizontal * y) + (horizontal * i)), out[1920]);
+
+//		}
+	}
+#endif
+}
 
 static void getPixelblock(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, int32_t horizontal, int32_t vertical)
 {
@@ -36,6 +60,35 @@ static void getPixelblock(uint16_t *out, uint16_t *in, uint32_t x, uint32_t y, i
 	}
 }
 
+static void setY(uint16_t * in, uint16_t *out, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
+{
+	int i;
+    int32_t block;
+	int offset_x,offset_y;
+    for (i=0;i<(mb_size/4);i++) {
+        for (block = 0 ; block < MB_IN_BLOCK;block++) {
+			if (block == 0) {
+				offset_x = 0;
+				offset_y = 0;
+			} else if (block == 1) {
+				offset_x = 8;
+				offset_y = 0;
+			} else if (block == 2) {
+				offset_x = 0;
+				offset_y = 8;
+			} else {
+				offset_x = 8;
+				offset_y = 8;
+			}
+			if (1920 <= ((mb_x * 16) + (i * 16) + offset_x)) {
+				printf("over %d %d %d %d %d\n", ((mb_x * 16) + (i * 16) + offset_x), mb_x, i, offset_x, mb_size);
+			}
+			setPixelblock(in  +  i * 64 * 4 + (block * 64), out, (mb_x * 16) + (i * 16) + offset_x, (mb_y * 16) + offset_y, horizontal, vertical);
+        }
+
+    }
+	return;
+}
 //get 1 slice data
 static void getYver2(uint16_t *out, uint16_t *in, uint32_t mb_x, uint32_t mb_y, int32_t mb_size, int32_t horizontal, int32_t vertical)
 {
@@ -161,7 +214,7 @@ static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint32_t scale, i
 {
     int16_t *data;
     int32_t i,j;
-	uint8_t qscale = (uint8_t)scale;
+	uint16_t qscale = (uint16_t)scale;
     for (i = 0; i < block_num; i++) {
         data = block + (i * BLOCK_IN_PIXEL);
         for (j=0;j<BLOCK_IN_PIXEL;j++) {
@@ -175,6 +228,39 @@ static void pre_quant_qt_qscale(int16_t *block, uint8_t *qmat, uint32_t scale, i
 // macro block num * block num per macro  block * pixel num per block * pixel size
 // (mb_size(8) * MB_IN_BLOCK(4) * BLOCK_IN_PIXEL(64)
 
+int output_first = 1;
+uint16_t* output_buffer= NULL;
+void init_output_buffer(uint16_t* buf) {
+	for(int i=0;i<1920*1088*2;i++) {
+	*(buf + i) = 0x200;
+	}
+	return;
+}
+FILE *out = NULL;
+void copy_dct(uint16_t*dct, uint16_t*buf, int mb_x, int mb_y, int block_num) {
+
+	if (block_num == 32) {
+				setY(dct, buf, mb_x, mb_y, block_num, 1920, 1088);
+//		fwrite(buf, 1 ,block_num * 64 *2 , out);
+	} else {
+//		setC(dct, buf, mb_x, mb_y, block_num, 1920, 1088);
+//		fwrite(buf, 1 ,block_num * 64 *2 , out);
+	}
+//	printf("%d %d\n", mb_x, mb_y);
+//	if ((mb_x == 112 && ( mb_y==67))) {
+	if ((mb_x == 112 && ( mb_y==66))) {
+		if ( out != NULL) {
+			uint16_t *ptr = (uint16_t*)buf;
+			printf("%d.\n", ptr[1920]);
+			fwrite(buf, 1 ,1920*1088*2*2 , out);
+			fclose(out);
+			out = NULL;
+		}
+	}
+//printf("%d %d\n", mb_x, mb_y);
+
+}
+
 static uint32_t encode_slice_component(struct Slice *param, int16_t* pixel, uint8_t *matrix, int mb_in_block)
 {
     uint32_t start_offset= getBitSize(param->bitstream);
@@ -185,6 +271,15 @@ static uint32_t encode_slice_component(struct Slice *param, int16_t* pixel, uint
     for (i = 0;i< param->slice_size_in_mb * mb_in_block;i++) {
         dct_block(&pixel[i* BLOCK_IN_PIXEL]);
     }
+#if 0
+	if (output_first == 1) {
+		out = fopen("./dct.yuv", "wb");
+		output_buffer = (uint16_t*)malloc(1920*1088*2*2);
+		init_output_buffer(output_buffer);
+		output_first = 0;
+	}
+	copy_dct((uint16_t*)pixel, output_buffer, param->mb_x, param->mb_y, param->slice_size_in_mb * mb_in_block);
+#endif
     //after_dct(pixel, param->slice_size_in_mb * mb_in_block);
 	pre_quant_qt_qscale(pixel, matrix,param->qscale,param->slice_size_in_mb * mb_in_block);
 
@@ -226,7 +321,6 @@ uint8_t qScale2quantization_index(uint32_t qScale)
 uint16_t encode_slice(struct Slice *param)
 {
 	//initBitStream(param->bitstream);
-
     uint32_t start_offset= getBitSize(param->bitstream);
 //	uint32_t size2;
 //	printf("start_slice_offset %d %p\n", start_offset, getBitStream(param->bitstream, &size2));
