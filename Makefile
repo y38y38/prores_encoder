@@ -4,38 +4,29 @@
 # This software is released under the MIT License.
 # http://opensource.org/licenses/mit-license.php
 #
-all:encoder
+all: .deps libproresencoder.so libproresencoder.a encoder
 
 CC=gcc
 
 CFLAGS=  -g  -I./ -Wall
+SRCS = frame.c dct.c bitstream.c vlc.c debug.c slice.c 
+OBJS = $(SRCS:..c=.o)
 
-encoder:frame.o   dct.o main.o bitstream.o slice.o vlc.o debug.o
-	${CC} -o encoder ${CFLAGS} frame.o  dct.o main.o  bitstream.o  vlc.o slice.o  debug.o -lm -lpthread
+.deps:
+	$(CC) -M ${CFLAGS} $(SRCS) main.c > $@
 
-frame.o:frame.c
-	${CC} ${CFLAGS} -c frame.c -lm
+libproresencoder.a: $(OBJS)
+	ar rv $@ $?
+	ranlib $@
 
-
-dct.o:dct.c
-	${CC} ${CFLAGS} -c dct.c
-
-bitstream.o:bitstream.c
-	${CC} ${CFLAGS} -c bitstream.c
-
-vlc.o:vlc.c
-	${CC} ${CFLAGS} -c vlc.c
-
-debug.o:debug.c
-	${CC} ${CFLAGS} -c debug.c
+libproresencoder.so: $(OBJS)
+	$(CC) -shared -o $@.1.0 $^ -fPIC
 
 
-slice.o:slice.c
-	${CC} ${CFLAGS} -c slice.c
+encoder:main.c libproresencoder.so.1.0
+	${CC} ${CFLAGS}  -o $@ $^ -lm -lpthread
 
-main.o:main.c
-	${CC} ${CFLAGS} -c main.c
 
 
 clean:
-	rm -f *.o encoder 
+	rm -f *.o libproresencoder.so libproresencoder.a encoder
