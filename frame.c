@@ -444,7 +444,7 @@ void encode_slices(struct encoder_param * param)
     uint32_t mb_y;
     uint32_t mb_x_max;
     mb_x_max = (param->horizontal+ 15 ) >> 4;
-	printf("mb_x_max %d\n", mb_x_max);
+	//printf("mb_x_max %d\n", mb_x_max);
 
     slice_num_max = GetSliceNum(param->horizontal, param->vertical, param->slice_size_in_mb);
 
