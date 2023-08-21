@@ -10,13 +10,13 @@ CC=gcc
 
 CFLAGS=  -g  -I./ -Wall
 SRCS = frame.c dct.c bitstream.c vlc.c debug.c slice.c 
-OBJS = $(SRCS:..c=.o)
+OBJS = $(SRCS:%.c=%.o)
 
 .deps:
-	$(CC) -M ${CFLAGS} $(SRCS) main.c > $@
+	$(CC) -M ${CFLAGS} $(SRCS) main.c -fPIC > $@
 
 libproresencoder.a: $(OBJS)
-	ar rv $@ $?
+	ar rv $@ $^
 	ranlib $@
 
 libproresencoder.so: $(OBJS)
@@ -25,7 +25,6 @@ libproresencoder.so: $(OBJS)
 
 encoder:main.c libproresencoder.so.1.0
 	${CC} ${CFLAGS}  -o $@ $^ -lm -lpthread
-
 
 
 clean:

@@ -74,12 +74,12 @@ static int slice_num_thread[MAX_THREAD_NUM];
 
 static struct thread_param params[MAX_THREAD_NUM];
 
-pthread_mutex_t end_frame_mutex;
+static pthread_mutex_t end_frame_mutex;
 
 static pthread_t thread[MAX_THREAD_NUM];
 
 
-uint32_t slice_num_max;
+static uint32_t slice_num_max;
 
 
 
