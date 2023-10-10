@@ -34,6 +34,8 @@ Capture: Capture.cpp Config.cpp $(SDK_PATH)/DeckLinkAPIDispatch.cpp
 
 
 
-
 clean:
-	rm -f *.o libproresencoder.so libproresencoder.a encoder
+	rm -f *.o libproresencoder.so.1.0 libproresencoder.a encoder
+
+install:
+	cp libproresencoder.so.1.0 libproresencoder.a /usr/lib/
