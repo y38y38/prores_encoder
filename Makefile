@@ -4,12 +4,11 @@
 # This software is released under the MIT License.
 # http://opensource.org/licenses/mit-license.php
 #
-all: .deps libproresencoder.so libproresencoder.a encoder Capture
+all: .deps libproresencoder.so libproresencoder.a encoder
 
 CC=g++
 
-SDK_PATH=../bmd_capture/include
-CFLAGS=  -g  -I./ -Wall -Wno-multichar -I $(SDK_PATH)  -fno-rtti
+CFLAGS=  -g  -I./ -Wall -Wno-multichar -fno-rtti
 SRCS = frame.c dct.c bitstream.c vlc.c debug.c slice.c 
 OBJS = $(SRCS:..c=.o)
 LDFLAGS=-L $(ENCODER_PATH) -lm -ldl -lpthread 
@@ -27,10 +26,6 @@ libproresencoder.so: $(OBJS)
 
 encoder:main.c libproresencoder.so.1.0
 	${CC} ${CFLAGS}  -o $@ $^ -lm -lpthread
-
-
-Capture: Capture.cpp Config.cpp $(SDK_PATH)/DeckLinkAPIDispatch.cpp
-	$(CC) -o Capture Capture.cpp Config.cpp libproresencoder.so.1.0 $(SDK_PATH)/DeckLinkAPIDispatch.cpp $(CFLAGS) $(LDFLAGS)
 
 
 
