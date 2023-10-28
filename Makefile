@@ -4,33 +4,37 @@
 # This software is released under the MIT License.
 # http://opensource.org/licenses/mit-license.php
 #
-all: .deps libproresencoder.so libproresencoder.a encoder
+all: make_dir $(OBJS) libproresencoder.so libproresencoder.a
 
 CC=gcc
+BIN_DIR= ./bin/
 
-CFLAGS=  -g  -I./ -Wall 
+CFLAGS=  -g  -I./ -Wall -fPIC
 SRCS = frame.c dct.c bitstream.c vlc.c debug.c slice.c 
-OBJS = $(SRCS:..c=.o)
-LDFLAGS=-L $(ENCODER_PATH) -lm -ldl -lpthread 
+OBJS = $(SRCS:.c=.o)
+LDFLAGS= -lm -ldl -lpthread 
 
-.deps:
-	$(CC) -M ${CFLAGS} $(SRCS) main.c -fPIC > $@
+make_dir:
+	mkdir -p ${BIN_DIR}
+
+
+#encoder:main.c ${BIN_DIR}/libproresencoder.so.1.0
+#	${CC} ${CFLAGS}  -o ${BIN_DIR}/$@ $^ ${LDFLAGS}
 
 libproresencoder.a: $(OBJS)
-	ar rv $@ $^
-	ranlib $@
+	ar rv ${BIN_DIR}/$@ $^
+	ranlib ${BIN_DIR}/$@
 
 libproresencoder.so: $(OBJS)
-	$(CC) -shared -o $@.1.0 $^ -fPIC
+	$(CC) -shared -o ${BIN_DIR}/$@.1.0 $^ -fPIC
 
 
-encoder:main.c libproresencoder.so.1.0
-	${CC} ${CFLAGS}  -o $@ $^ -lm -lpthread
 
-
+$(OBJS): $(SRCS)
+	$(CC) $(CFLAGS) -c $(SRCS)
 
 clean:
-	rm -f *.o libproresencoder.so.1.0 libproresencoder.a encoder
+	rm -rf *.o ${BIN_DIR}
 
 install:
-	cp libproresencoder.so.1.0 libproresencoder.a /usr/lib/
+	cp ${BIN_DIR}/libproresencoder.so.1.0 ${BIN_DIR}/libproresencoder.a /usr/lib/

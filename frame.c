@@ -79,7 +79,7 @@ static pthread_mutex_t end_frame_mutex;
 static pthread_t thread[MAX_THREAD_NUM];
 
 
-static uint32_t slice_num_max;
+static uint32_t slice_num_max = 1;
 
 
 
@@ -292,6 +292,7 @@ void write_slice_size(int slice_no, int size)
 int getStartSliceNumForThread(int thread_no)
 {
 	int index;
+#if (MAX_THREAD_NUM != 1 ) 
 	if (slice_num_max < MAX_THREAD_NUM) {
 		index = thread_no;
 	} else 	if (MAX_THREAD_NUM != 1) {
@@ -299,6 +300,9 @@ int getStartSliceNumForThread(int thread_no)
 	} else {
 		index = 0;
 	}
+#else
+	index = 0;
+#endif
 	return index;
 }
 //thread 3
@@ -324,6 +328,7 @@ int getStartSliceNumForThread(int thread_no)
 int getThreadNumForSliceNo(int slice_no)
 {
 	int thread_no;
+#if (MAX_THREAD_NUM != 1 ) 
 	int slice_num_for_thread;
 	if (slice_num_max < MAX_THREAD_NUM) {
 		thread_no = slice_no;
@@ -333,6 +338,9 @@ int getThreadNumForSliceNo(int slice_no)
 	} else {
 		thread_no = 0;
 	}
+#else
+	thread_no = 0;
+#endif
 	return thread_no;
 }
 
@@ -345,12 +353,14 @@ int getSliceNumForThread(int thread_no)
 		} else {
 			num = 0;
 		}
+#if (MAX_THREAD_NUM != 1 ) 
 	} else if (MAX_THREAD_NUM != 1) {
 		if ((MAX_THREAD_NUM -1) == thread_no) {
 			num = slice_num_max % (MAX_THREAD_NUM -1);
 		} else {
 			num = slice_num_max / (MAX_THREAD_NUM -1) ;
 		}
+#endif
 	} else {
 			num = slice_num_max;
 	}
