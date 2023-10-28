@@ -6,9 +6,9 @@
 #
 all: .deps libproresencoder.so libproresencoder.a encoder
 
-CC=g++
+CC=gcc
 
-CFLAGS=  -g  -I./ -Wall -Wno-multichar -fno-rtti
+CFLAGS=  -g  -I./ -Wall 
 SRCS = frame.c dct.c bitstream.c vlc.c debug.c slice.c 
 OBJS = $(SRCS:..c=.o)
 LDFLAGS=-L $(ENCODER_PATH) -lm -ldl -lpthread 
